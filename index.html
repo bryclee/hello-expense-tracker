@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Google Auth App</title>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script>
+        function onLoad() {
+            gapi.load('auth2', function() {
+                gapi.auth2.init({
+                    client_id: '660949404769-7lpragldnlihbers5ibn1v0of5h9s43h.apps.googleusercontent.com',
+                });
+            });
+        }
+
+        function signIn() {
+            const auth2 = gapi.auth2.getAuthInstance();
+            auth2.signIn().then(function(googleUser) {
+                const profile = googleUser.getBasicProfile();
+                let infoDiv = document.getElementById('user-info');
+                if (!infoDiv) {
+                    infoDiv = document.createElement('div');
+                    infoDiv.id = 'user-info';
+                    document.body.appendChild(infoDiv);
+                }
+                infoDiv.innerHTML = `
+                    <h2>User Info</h2>
+                    <p><strong>ID:</strong> ${profile.getId()}</p>
+                    <p><strong>Name:</strong> ${profile.getName()}</p>
+                    <p><strong>Email:</strong> ${profile.getEmail()}</p>
+                    <img src="${profile.getImageUrl()}" alt="User Image" style="max-width:100px;"/>
+                `;
+            });
+        }
+
+        function signOut() {
+            const auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+                let infoDiv = document.getElementById('user-info');
+                if (infoDiv) {
+                    infoDiv.remove();
+                }
+            });
+        }
+    </script>
+</head>
+<body onload="onLoad()">
+    <h1>Welcome to My Google Auth App</h1>
+    <button onclick="signIn()">Sign In with Google</button>
+    <button onclick="signOut()">Sign Out</button>
+</body>
+</html>
