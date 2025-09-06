@@ -180,7 +180,32 @@ Describes the user-facing behavior and the different states of the application.
         - Displays the last 5 transactions from the Google Sheet.
         - A "Show More" button to fetch and display more transactions (e.g., the next 5).
 
-## 5. HTML Structure (`index.html`)
+## 5. Offline Capabilities
+
+To ensure the application is usable without an internet connection, it will implement offline-first capabilities using a **Service Worker**.
+
+### 5.1. Service Worker and Caching
+
+-   A `service-worker.js` file will be created.
+-   This service worker will cache the core application assets (the "app shell"): `index.html`, all JavaScript files (`js/*.js`), and any future CSS files.
+-   On subsequent visits, the service worker will intercept network requests and serve the cached assets first, allowing the application to load instantly, even when offline.
+
+### 5.2. Offline Behavior
+
+-   **Loading:** The app will load and be fully interactive, regardless of network status.
+-   **Data Display:** Previously fetched transactions, stored in `localStorage`, will be displayed.
+-   **Offline Indicator:** A clear visual indicator (e.g., a banner or an icon) will appear at the top of the page to inform the user that they are currently offline.
+-   **Form Submission:** The expense entry form will remain fully functional.
+    -   When a user submits a new expense while offline, the data will be saved to a dedicated `localStorage` queue (e.g., `pending-transactions`).
+    -   The UI will be updated immediately to show the new expense in the transaction list.
+    -   A message will be displayed next to the newly added item, such as `(Not Synced)`.
+
+### 5.3. Synchronization
+
+-   When the application detects that the network connection has been restored, it will automatically attempt to sync the pending transactions from `localStorage` to the Google Sheet.
+-   Once an item is successfully synced, its `(Not Synced)` status will be removed from the UI.
+
+## 6. HTML Structure (`index.html`)
 
 This is the proposed HTML structure with placeholder elements that the JavaScript will interact with.
 
@@ -263,6 +288,51 @@ This is the proposed HTML structure with placeholder elements that the JavaScrip
     <!-- Main Application Script -->
     <script type="module" src="js/app.js"></script>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+
 </body>
 </html>
 ```
+
+## 7. Testing Strategy
+
+To ensure code quality and application reliability, the following testing strategies will be implemented.
+
+### 7.1. Unit Testing
+
+-   **Framework:** A JavaScript testing framework like **Jest** will be used.
+-   **Scope:** Unit tests will focus on individual functions and modules in isolation.
+-   **Mocks:** External dependencies, especially the Google API clients (`gapi` and `google.accounts`), will be mocked. This allows for fast, repeatable tests without actual network calls.
+-   **Target Files:**
+    -   `auth.js`: Test functions like `initGoogleAuth` and `signIn` to ensure they interact with the (mocked) Google Identity Services library correctly.
+    -   `gapi.js`: Test functions like `getExpenses` and `addExpense` to verify they construct the correct API requests and handle responses properly.
+    -   `app.js`: Test UI logic, data formatting, and event handling logic.
+
+### 7.2. Integration Testing
+
+-   **Framework:** A browser automation tool like **Cypress** or **Puppeteer** will be considered for end-to-end testing.
+-   **Scope:** Integration tests will focus on the interactions between different parts of the application, from UI events to API calls.
+-   **Test Environment:**
+    -   A dedicated Google Account and a separate Google Sheet will be used for testing purposes.
+    -   The OAuth Client ID and Spreadsheet ID for the test environment will be stored in a separate configuration file.
+-   **Test Scenarios:**
+    -   **Login Flow:** Test the entire Google Sign-In flow.
+    -   **Expense Creation:** Simulate filling out the form and submitting it. Verify that the new expense appears in the UI and is correctly added to the test Google Sheet.
+    -   **Offline Mode:** Test the application's behavior when offline. This includes caching of assets by the service worker and queuing of new expenses in `localStorage`.
+
+## 8. Hosting
+
+The application will be hosted on **GitHub Pages**.
+
+-   **URL:** The application will be available at a URL like `https://<username>.github.io/<repository-name>/`.
+-   **OAuth Configuration:** The **Authorized JavaScript origins** in the Google Cloud Console must be updated to include the GitHub Pages URL to ensure that the Google Sign-In flow works correctly.
