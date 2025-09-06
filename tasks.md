@@ -1,22 +1,18 @@
-# Expense Tracker Implementation Tasks
-
-This file breaks down the implementation of the expense tracker application into a series of tasks.
-
 ## 1. Project Setup
 
 -   [x] Create the directory structure (`js` folder).
 -   [x] Create the initial files:
-    -   [ ] `index.html`
-    -   [ ] `js/app.js`
-    -   [ ] `js/auth.js`
-    -   [ ] `js/gapi.js`
-    -   [ ] `js/config.js`
-    -   [ ] `service-worker.js`
-    -   [ ] `tasks.md`
+    -   [x] `index.html`
+    -   [x] `js/app.js`
+    -   [x] `js/auth.js`
+    -   [x] `js/gapi.js`
+    -   [x] `js/config.js`
+    -   [x] `service-worker.js`
+    -   [x] `tasks.md`
 
 ## 2. HTML Structure
 
--   [ ] Implement the HTML structure in `index.html` as defined in `design.md`.
+-   [x] Implement the HTML structure in `index.html` as defined in `design.md`.
 
 ## 3. Google API Setup
 
@@ -50,6 +46,7 @@ This file breaks down the implementation of the expense tracker application into
 -   [x] Implement the offline indicator.
 -   [x] Implement the `localStorage` logic for offline data storage.
 -   [x] Implement the synchronization logic.
+-   [ ] Work on the initialization logic when it comes to the service worker and offline flow.
 
 ## 8. Testing
 
