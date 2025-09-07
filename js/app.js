@@ -1,6 +1,5 @@
-console.log('app.js loaded');
 import { initGoogleAuth, signIn } from './auth.js';
-import { initGapiClient, setGapiToken, getExpenses, addExpense } from './gapi.js';
+import { initGapiClient, setGapiToken, getExpenses, addExpense, getSpreadsheetDetails } from './gapi.js';
 
 const loggedInView = document.getElementById('logged-in-view');
 const loggedOutView = document.getElementById('logged-out-view');
@@ -8,6 +7,11 @@ const signInButton = document.getElementById('sign-in-button');
 const signOutButton = document.getElementById('sign-out-button');
 const loadingIndicator = document.getElementById('loading-indicator');
 const offlineIndicator = document.getElementById('offline-indicator');
+const spreadsheetSelection = document.getElementById('spreadsheet-selection');
+const switchButton = document.getElementById('switch-button');
+const saveSpreadsheetButton = document.getElementById('save-spreadsheet-button');
+const spreadsheetIdInput = document.getElementById('spreadsheet-id');
+const sheetNameInput = document.getElementById('sheet-name');
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
@@ -22,13 +26,41 @@ function showLoggedInView() {
   loggedInView.style.display = 'block';
   loggedOutView.style.display = 'none';
   loadingIndicator.style.display = 'none';
+  spreadsheetSelection.style.display = 'none';
+  switchButton.style.display = 'block';
   document.getElementById('expense-date').valueAsDate = new Date();
+  loadSpreadsheetDetails();
 }
 
 function showLoggedOutView() {
   loggedInView.style.display = 'none';
   loggedOutView.style.display = 'block';
   loadingIndicator.style.display = 'none';
+  spreadsheetSelection.style.display = 'none';
+  switchButton.style.display = 'none';
+}
+
+function showSpreadsheetSelection() {
+  loggedInView.style.display = 'none';
+  loggedOutView.style.display = 'none';
+  loadingIndicator.style.display = 'none';
+  spreadsheetSelection.style.display = 'block';
+  switchButton.style.display = 'none';
+}
+
+function handleSwitchClick() {
+  showSpreadsheetSelection();
+}
+
+function handleSaveSpreadsheetClick() {
+  const spreadsheetId = spreadsheetIdInput.value;
+  const sheetName = sheetNameInput.value;
+
+  localStorage.setItem('selected_spreadsheet_id', spreadsheetId);
+  localStorage.setItem('selected_sheet_name', sheetName);
+
+  // Reload the application to use the new spreadsheet
+  window.location.reload();
 }
 
 function handleAuthClick() {
@@ -42,8 +74,10 @@ function handleSignOutClick() {
 }
 
 async function handleAuthResponse(tokenResponse) {
-  console.log('Storing token:', tokenResponse);
-  localStorage.setItem('gapi_token', JSON.stringify(tokenResponse));
+  const now = new Date();
+  const expirationTime = now.getTime() + (tokenResponse.expires_in * 1000);
+  const tokenWithExpiration = { ...tokenResponse, expirationTime };
+  localStorage.setItem('gapi_token', JSON.stringify(tokenWithExpiration));
   setGapiToken(tokenResponse);
   showLoggedInView();
   loadExpenses();
@@ -51,11 +85,42 @@ async function handleAuthResponse(tokenResponse) {
 
 async function loadExpenses() {
   let expenses = [];
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+
+  if (!spreadsheetId || !sheetName) {
+    showSpreadsheetSelection();
+    return;
+  }
+
   if (navigator.onLine) {
-    expenses = await getExpenses();
+    try {
+      expenses = await getExpenses(spreadsheetId, sheetName);
+    } catch (error) {
+      if (error.status === 401) {
+        handleSignOutClick();
+      } else {
+        console.error('Error loading expenses:', error);
+      }
+    }
   }
   const pendingExpenses = getPendingExpenses();
   renderExpenses(expenses, pendingExpenses);
+}
+
+async function loadSpreadsheetDetails() {
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+
+  if (!spreadsheetId || !sheetName) {
+    showSpreadsheetSelection();
+    return;
+  }
+
+  const spreadsheetDetails = await getSpreadsheetDetails(spreadsheetId);
+  const spreadsheetTitle = spreadsheetDetails.properties.title;
+  const detailsElement = document.getElementById('spreadsheet-details');
+  detailsElement.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
 }
 
 function renderExpenses(expenses, pendingExpenses) {
@@ -95,21 +160,33 @@ function main() {
 
   signInButton.addEventListener('click', handleAuthClick);
   signOutButton.addEventListener('click', handleSignOutClick);
+  switchButton.addEventListener('click', handleSwitchClick);
+  saveSpreadsheetButton.addEventListener('click', handleSaveSpreadsheetClick);
 
   const expenseForm = document.getElementById('expense-form');
   expenseForm.addEventListener('submit', handleAddExpense);
 
   initGapiClient(() => {
     initGoogleAuth(handleAuthResponse);
-    console.log('Checking for token...');
-    const token = JSON.parse(localStorage.getItem('gapi_token'));
-    if (token) {
-      console.log('Token found:', token);
-      setGapiToken(token);
-      showLoggedInView();
-      loadExpenses();
+    const tokenString = localStorage.getItem('gapi_token');
+    const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+    const sheetName = localStorage.getItem('selected_sheet_name');
+
+    if (tokenString) {
+      const token = JSON.parse(tokenString);
+      if (new Date().getTime() < token.expirationTime) {
+        setGapiToken(token);
+        if (spreadsheetId && sheetName) {
+          showLoggedInView();
+          loadExpenses();
+        } else {
+          showSpreadsheetSelection();
+        }
+      } else {
+        localStorage.removeItem('gapi_token');
+        showLoggedOutView();
+      }
     } else {
-      console.log('Token not found.');
       showLoggedOutView();
     }
   });
@@ -125,8 +202,17 @@ async function handleAddExpense(event) {
 
   const expense = { date, name, category, price };
 
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+
+  if (!spreadsheetId || !sheetName) {
+    alert('Please select a spreadsheet first.');
+    showSpreadsheetSelection();
+    return;
+  }
+
   if (navigator.onLine) {
-    await addExpense(date, name, category, price);
+    await addExpense(spreadsheetId, sheetName, date, name, category, price);
   } else {
     savePendingExpense(expense);
   }
@@ -152,9 +238,17 @@ function savePendingExpense(expense) {
 
 async function syncPendingExpenses() {
   const pendingExpenses = getPendingExpenses();
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+
+  if (!spreadsheetId || !sheetName) {
+    console.warn('No spreadsheet selected for syncing pending expenses.');
+    return;
+  }
+
   if (pendingExpenses.length > 0) {
     for (const expense of pendingExpenses) {
-      await addExpense(expense.date, expense.name, expense.category, expense.price);
+      await addExpense(spreadsheetId, sheetName, expense.date, expense.name, expense.category, expense.price);
     }
     localStorage.removeItem('pending-expenses');
     loadExpenses();

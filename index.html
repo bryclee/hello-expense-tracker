@@ -20,6 +20,21 @@
     </div>
 
     <h1>Expense Tracker</h1>
+    <div id="spreadsheet-details" style="font-style: italic; margin-bottom: 1em;"></div>
+    <button id="switch-button" style="display: none;">Switch Spreadsheet</button>
+
+    <div id="spreadsheet-selection" style="display: none;">
+        <h3>Select Spreadsheet</h3>
+        <div>
+            <label for="spreadsheet-id">Spreadsheet ID</label>
+            <input type="text" id="spreadsheet-id" size="50">
+        </div>
+        <div>
+            <label for="sheet-name">Sheet Name</label>
+            <input type="text" id="sheet-name" value="Expenses">
+        </div>
+        <button id="save-spreadsheet-button">Save</button>
+    </div>
 
     <div id="loading-indicator">Loading...</div>
 
