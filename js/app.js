@@ -1,5 +1,11 @@
 import { initGoogleAuth, signIn } from './auth.js';
-import { initGapiClient, setGapiToken, getExpenses, addExpense, getSpreadsheetDetails } from './gapi.js';
+import {
+  initGapiClient,
+  setGapiToken,
+  getExpenses,
+  addExpense,
+  getSpreadsheetDetails,
+} from './gapi.js';
 
 const loggedInView = document.getElementById('logged-in-view');
 const loggedOutView = document.getElementById('logged-out-view');
@@ -9,9 +15,13 @@ const loadingIndicator = document.getElementById('loading-indicator');
 const offlineIndicator = document.getElementById('offline-indicator');
 const spreadsheetSelection = document.getElementById('spreadsheet-selection');
 const switchButton = document.getElementById('switch-button');
-const saveSpreadsheetButton = document.getElementById('save-spreadsheet-button');
+const saveSpreadsheetButton = document.getElementById(
+  'save-spreadsheet-button'
+);
 const spreadsheetIdInput = document.getElementById('spreadsheet-id');
 const sheetNameInput = document.getElementById('sheet-name');
+const shareableLinkInput = document.getElementById('shareable-link');
+const copyLinkButton = document.getElementById('copy-link-button');
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
@@ -46,6 +56,12 @@ function showSpreadsheetSelection() {
   loadingIndicator.style.display = 'none';
   spreadsheetSelection.style.display = 'block';
   switchButton.style.display = 'none';
+
+  // Prefill current details
+  spreadsheetIdInput.value =
+    localStorage.getItem('selected_spreadsheet_id') || '';
+  sheetNameInput.value =
+    localStorage.getItem('selected_sheet_name') || 'Expenses';
 }
 
 function handleSwitchClick() {
@@ -75,7 +91,7 @@ function handleSignOutClick() {
 
 async function handleAuthResponse(tokenResponse) {
   const now = new Date();
-  const expirationTime = now.getTime() + (tokenResponse.expires_in * 1000);
+  const expirationTime = now.getTime() + tokenResponse.expires_in * 1000;
   const tokenWithExpiration = { ...tokenResponse, expirationTime };
   localStorage.setItem('gapi_token', JSON.stringify(tokenWithExpiration));
   setGapiToken(tokenResponse);
@@ -120,7 +136,26 @@ async function loadSpreadsheetDetails() {
   const spreadsheetDetails = await getSpreadsheetDetails(spreadsheetId);
   const spreadsheetTitle = spreadsheetDetails.properties.title;
   const detailsElement = document.getElementById('spreadsheet-details');
-  detailsElement.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
+  const spreadsheetTitleSpan = document.getElementById('spreadsheet-title');
+  const spreadsheetLink = document.getElementById('spreadsheet-link');
+
+  spreadsheetTitleSpan.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
+  spreadsheetLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+
+  // Construct shareable link
+  const shareableUrl = `${window.location.origin}${window.location.pathname}?spreadsheetId=${spreadsheetId}&sheetName=${sheetName}`;
+  shareableLinkInput.value = shareableUrl;
+
+  copyLinkButton.onclick = () => {
+    navigator.clipboard
+      .writeText(shareableUrl)
+      .then(() => {
+        alert('Link copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Could not copy text: ', err);
+      });
+  };
 }
 
 function renderExpenses(expenses, pendingExpenses) {
@@ -130,11 +165,14 @@ function renderExpenses(expenses, pendingExpenses) {
   const allExpenses = [...expenses, ...pendingExpenses];
   const recentExpenses = allExpenses.slice(-5);
 
+  // Reverse the order of recentExpenses to show newest on top
+  recentExpenses.reverse();
+
   if (recentExpenses.length > 0) {
     recentExpenses.forEach((expense, index) => {
       const li = document.createElement('li');
-      let textContent = ''
-      if(Array.isArray(expense)){
+      let textContent = '';
+      if (Array.isArray(expense)) {
         textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - $${expense[3]}`;
       } else {
         textContent = `${expense.date} - ${expense.name} - ${expense.category} - $${expense.price}`;
@@ -169,8 +207,23 @@ function main() {
   initGapiClient(() => {
     initGoogleAuth(handleAuthResponse);
     const tokenString = localStorage.getItem('gapi_token');
-    const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
-    const sheetName = localStorage.getItem('selected_sheet_name');
+    let spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+    let sheetName = localStorage.getItem('selected_sheet_name');
+
+    // Check for query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const querySpreadsheetId = urlParams.get('spreadsheetId');
+    const querySheetName = urlParams.get('sheetName');
+
+    if (querySpreadsheetId && querySheetName) {
+      spreadsheetId = querySpreadsheetId;
+      sheetName = querySheetName;
+      // Prefill inputs for the user to save
+      spreadsheetIdInput.value = querySpreadsheetId;
+      sheetNameInput.value = querySheetName;
+      showSpreadsheetSelection();
+      return; // Stop further initialization, wait for user to save
+    }
 
     if (tokenString) {
       const token = JSON.parse(tokenString);
@@ -216,7 +269,7 @@ async function handleAddExpense(event) {
   } else {
     savePendingExpense(expense);
   }
-  
+
   // Clear the form
   document.getElementById('expense-date').valueAsDate = new Date();
   document.getElementById('expense-name').value = '';
@@ -248,7 +301,14 @@ async function syncPendingExpenses() {
 
   if (pendingExpenses.length > 0) {
     for (const expense of pendingExpenses) {
-      await addExpense(spreadsheetId, sheetName, expense.date, expense.name, expense.category, expense.price);
+      await addExpense(
+        spreadsheetId,
+        sheetName,
+        expense.date,
+        expense.name,
+        expense.category,
+        expense.price
+      );
     }
     localStorage.removeItem('pending-expenses');
     loadExpenses();

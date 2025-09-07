@@ -20,8 +20,11 @@
     </div>
 
     <h1>Expense Tracker</h1>
-    <div id="spreadsheet-details" style="font-style: italic; margin-bottom: 1em;"></div>
-    <button id="switch-button" style="display: none;">Switch Spreadsheet</button>
+    <div id="spreadsheet-details" style="font-style: italic; margin-bottom: 1em;">
+        <span id="spreadsheet-title"></span>
+        <a id="spreadsheet-link" href="#" target="_blank" style="margin-left: 10px;">View Sheet</a>
+    </div>
+    <button id="switch-button" style="display: none;">Spreadsheet Details</button>
 
     <div id="spreadsheet-selection" style="display: none;">
         <h3>Select Spreadsheet</h3>
@@ -34,6 +37,11 @@
             <input type="text" id="sheet-name" value="Expenses">
         </div>
         <button id="save-spreadsheet-button">Save</button>
+        <div id="shareable-link-container" style="margin-top: 1em;">
+            <label for="shareable-link">Shareable Link:</label>
+            <input type="text" id="shareable-link" size="60" readonly>
+            <button id="copy-link-button">Copy</button>
+        </div>
     </div>
 
     <div id="loading-indicator">Loading...</div>
@@ -65,11 +73,15 @@
                 <label for="expense-category">Category</label>
                 <select id="expense-category" required>
                     <option value="" disabled selected>Select a category</option>
+                    <option>House</option>
+                    <option>Utilities</option>
+                    <option>Transportation</option>
                     <option>Food</option>
-                    <option>Transport</option>
-                    <option>Bills</option>
-                    <option>Entertainment</option>
-                    <option>Other</option>
+                    <option>Fun</option>
+                    <option>Vacation</option>
+                    <option>Pet</option>
+                    <option>Personal</option>
+                    <option>Misc</option>
                 </select>
             </div>
             <div>

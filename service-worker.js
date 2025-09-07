@@ -1,4 +1,4 @@
-const CACHE_NAME = 'expense-tracker-cache-v1';
+const CACHE_NAME = 'expense-tracker-cache-v3';
 const urlsToCache = [
   '/',
   '/index.html',
