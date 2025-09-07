@@ -102,10 +102,18 @@
 
     <!-- Google Client Libraries -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://apis.google.com/js/api.js?onload=onGapiLoad" async defer></script>
     
-    <!-- Main Application Script -->
-    <script type="module" src="js/app.js"></script>
+    <script>
+        function onGapiLoad() {
+            // GAPI is loaded. Now dynamically import and start the app.
+            import('./js/app.js')
+              .then(module => {
+                module.main();
+              })
+              .catch(err => console.error('Failed to load app module:', err));
+        }
+    </script>
 
     <script>
         if ('serviceWorker' in navigator) {

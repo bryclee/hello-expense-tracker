@@ -208,7 +208,7 @@ function renderExpenses(expenses, pendingExpenses) {
   }
 }
 
-function main() {
+export function main() {
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
@@ -335,4 +335,4 @@ async function syncPendingExpenses() {
   }
 }
 
-main();
+
