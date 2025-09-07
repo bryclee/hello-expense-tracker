@@ -15,3 +15,7 @@ export function signIn() {
   // Prompt the user to select a Google Account and grant access
   tokenClient.requestAccessToken();
 }
+
+export function requestTokenSilent() {
+  tokenClient.requestAccessToken({ prompt: '' });
+}

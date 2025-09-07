@@ -27,7 +27,7 @@ This document outlines the client-side design for a simple expense tracker that 
 
 This section details the specific API calls and libraries used.
 
-### 3.1. Key Documentation Links
+### 3.1. Google API references
 
 - **Google Identity Services (GIS) for Web:**
   - [Sign-In for Web Overview](https://developers.google.com/identity/gsi/web/guides/overview)

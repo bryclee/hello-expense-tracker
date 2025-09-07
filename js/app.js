@@ -1,4 +1,4 @@
-import { initGoogleAuth, signIn } from './auth.js';
+import { initGoogleAuth, signIn, requestTokenSilent } from './auth.js';
 import {
   initGapiClient,
   setGapiToken,
@@ -86,18 +86,34 @@ function handleAuthClick() {
 
 function handleSignOutClick() {
   localStorage.removeItem('gapi_token');
+  localStorage.removeItem('user_has_signed_in');
   gapi.client.setToken(null);
   showLoggedOutView();
 }
 
 async function handleAuthResponse(tokenResponse) {
-  const now = new Date();
-  const expirationTime = now.getTime() + tokenResponse.expires_in * 1000;
-  const tokenWithExpiration = { ...tokenResponse, expirationTime };
-  localStorage.setItem('gapi_token', JSON.stringify(tokenWithExpiration));
-  setGapiToken(tokenResponse);
-  showLoggedInView();
-  loadExpenses();
+  // Case 1: Successful login (either silent or interactive)
+  if (tokenResponse && tokenResponse.access_token) {
+    localStorage.setItem('user_has_signed_in', 'true');
+    const now = new Date();
+    const expirationTime = now.getTime() + tokenResponse.expires_in * 1000;
+    const tokenWithExpiration = { ...tokenResponse, expirationTime };
+    localStorage.setItem('gapi_token', JSON.stringify(tokenWithExpiration));
+    setGapiToken(tokenResponse);
+
+    const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+    const sheetName = localStorage.getItem('selected_sheet_name');
+
+    if (spreadsheetId && sheetName) {
+      showLoggedInView();
+      loadExpenses();
+    } else {
+      showSpreadsheetSelection();
+    }
+  } else {
+    // Case 2: Failed silent login. Show the logged-out view.
+    showLoggedOutView();
+  }
 }
 
 async function loadExpenses() {
@@ -174,9 +190,9 @@ function renderExpenses(expenses, pendingExpenses) {
       const li = document.createElement('li');
       let textContent = '';
       if (Array.isArray(expense)) {
-        textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - $${expense[3]}`;
+        textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - ${expense[3]}`;
       } else {
-        textContent = `${expense.date} - ${expense.name} - ${expense.category} - $${expense.price}`;
+        textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price}`;
       }
 
       if (index >= expenses.length) {
@@ -207,9 +223,6 @@ function main() {
 
   initGapiClient(() => {
     initGoogleAuth(handleAuthResponse);
-    const tokenString = localStorage.getItem('gapi_token');
-    let spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
-    let sheetName = localStorage.getItem('selected_sheet_name');
 
     // Check for query parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -218,13 +231,19 @@ function main() {
 
     if (querySpreadsheetId && querySheetName) {
       showSpreadsheetSelection(querySpreadsheetId, querySheetName);
-      return; // Stop further initialization, wait for user to save
+      return; // Wait for user to save
     }
+
+    const tokenString = localStorage.getItem('gapi_token');
+    const userHasSignedIn = localStorage.getItem('user_has_signed_in');
 
     if (tokenString) {
       const token = JSON.parse(tokenString);
       if (new Date().getTime() < token.expirationTime) {
+        // We have a valid token, so we are logged in.
         setGapiToken(token);
+        const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+        const sheetName = localStorage.getItem('selected_sheet_name');
         if (spreadsheetId && sheetName) {
           showLoggedInView();
           loadExpenses();
@@ -232,10 +251,15 @@ function main() {
           showSpreadsheetSelection();
         }
       } else {
+        // Token expired, try to refresh it silently.
         localStorage.removeItem('gapi_token');
-        showLoggedOutView();
+        requestTokenSilent();
       }
+    } else if (userHasSignedIn) {
+      // No token, but they are a returning user, so try silent auth.
+      requestTokenSilent();
     } else {
+      // No token and they are a new user. Just show the button.
       showLoggedOutView();
     }
   });
