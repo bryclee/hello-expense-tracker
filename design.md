@@ -32,9 +32,10 @@ This section details the specific API calls and libraries used.
 - **Google Identity Services (GIS) for Web:**
   - [Sign-In for Web Overview](https://developers.google.com/identity/gsi/web/guides/overview)
   - [JavaScript Client Reference](https://developers.google.com/identity/gsi/web/reference/js-reference)
+  - [OAuth 2.0 Token Model Guide](https://developers.google.com/identity/oauth2/web/guides/use-token-model): Explains the user consent flow and how tokens are handled for returning users.
 - **Google API Client for JavaScript (GAPI):**
   - [Developer's Guide](https://developers.google.com/api-client-library/javascript/dev-guide)
-  - [Quickstart](https://github.com/google/google-api-javascript-client/blob/master/docs/quickstart.md)
+  - [Quickstart](https://developers.google.com/api-client-library/javascript/start/start-js): Demonstrates the standard setup, including the use of the `onload` callback for script loading.
 - **Google Sheets API:**
   - [REST API Reference](https://developers.google.com/sheets/api/reference/rest): Essential for understanding the structure of requests and responses that GAPI uses.
 
