@@ -50,7 +50,7 @@ function showLoggedOutView() {
   switchButton.style.display = 'none';
 }
 
-function showSpreadsheetSelection() {
+function showSpreadsheetSelection(querySpreadsheetId = null, querySheetName = null) {
   loggedInView.style.display = 'none';
   loggedOutView.style.display = 'none';
   loadingIndicator.style.display = 'none';
@@ -58,10 +58,8 @@ function showSpreadsheetSelection() {
   switchButton.style.display = 'none';
 
   // Prefill current details
-  spreadsheetIdInput.value =
-    localStorage.getItem('selected_spreadsheet_id') || '';
-  sheetNameInput.value =
-    localStorage.getItem('selected_sheet_name') || 'Expenses';
+  spreadsheetIdInput.value = querySpreadsheetId || localStorage.getItem('selected_spreadsheet_id') || '';
+  sheetNameInput.value = querySheetName || localStorage.getItem('selected_sheet_name') || 'Expenses';
 }
 
 function handleSwitchClick() {
@@ -74,6 +72,9 @@ function handleSaveSpreadsheetClick() {
 
   localStorage.setItem('selected_spreadsheet_id', spreadsheetId);
   localStorage.setItem('selected_sheet_name', sheetName);
+
+  // Remove query parameters from URL
+  window.history.replaceState({}, document.title, window.location.pathname);
 
   // Reload the application to use the new spreadsheet
   window.location.reload();
@@ -216,12 +217,7 @@ function main() {
     const querySheetName = urlParams.get('sheetName');
 
     if (querySpreadsheetId && querySheetName) {
-      spreadsheetId = querySpreadsheetId;
-      sheetName = querySheetName;
-      // Prefill inputs for the user to save
-      spreadsheetIdInput.value = querySpreadsheetId;
-      sheetNameInput.value = querySheetName;
-      showSpreadsheetSelection();
+      showSpreadsheetSelection(querySpreadsheetId, querySheetName);
       return; // Stop further initialization, wait for user to save
     }
 

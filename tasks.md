@@ -39,6 +39,7 @@
 -   [x] Implement the expense form submission.
 -   [x] Implement the display of recent transactions.
 -   [ ] Implement the "Show More" functionality.
+-   [ ] Ensure `gapi` is loaded before `initGapiClient` is called in `main`.
 
 ## 7. Offline Capabilities
 
