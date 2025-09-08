@@ -1,4 +1,4 @@
-import { initGoogleAuth, signIn, requestTokenSilent } from './auth.js';
+import { initGoogleAuth, signIn } from './auth.js';
 import {
   initGapiClient,
   setGapiToken,
@@ -81,6 +81,7 @@ function handleSaveSpreadsheetClick() {
 }
 
 function handleAuthClick() {
+  console.log('Sign-in button clicked');
   signIn();
 }
 
@@ -209,10 +210,12 @@ function renderExpenses(expenses, pendingExpenses) {
 }
 
 export function main() {
+  console.log('main() called');
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
+  console.log('Attaching click handler to sign-in button');
   signInButton.addEventListener('click', handleAuthClick);
   signOutButton.addEventListener('click', handleSignOutClick);
   switchButton.addEventListener('click', handleSwitchClick);
@@ -235,8 +238,6 @@ export function main() {
     }
 
     const tokenString = localStorage.getItem('gapi_token');
-    const userHasSignedIn = localStorage.getItem('user_has_signed_in');
-
     if (tokenString) {
       const token = JSON.parse(tokenString);
       if (new Date().getTime() < token.expirationTime) {
@@ -251,15 +252,11 @@ export function main() {
           showSpreadsheetSelection();
         }
       } else {
-        // Token expired, try to refresh it silently.
-        localStorage.removeItem('gapi_token');
-        requestTokenSilent();
+        // Token expired, show the logged-out view.
+        showLoggedOutView();
       }
-    } else if (userHasSignedIn) {
-      // No token, but they are a returning user, so try silent auth.
-      requestTokenSilent();
     } else {
-      // No token and they are a new user. Just show the button.
+      // No token, show the logged-out view.
       showLoggedOutView();
     }
   });
