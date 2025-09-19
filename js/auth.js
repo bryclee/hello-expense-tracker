@@ -7,6 +7,7 @@ export function initGoogleAuth(callback) {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
+    prompt: '',
     callback: callback, // A function to call after the token is received
   });
 }

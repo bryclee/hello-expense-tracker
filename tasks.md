@@ -54,3 +54,13 @@
 -   [ ] Set up a testing environment (e.g., Jest for unit tests, Cypress for integration tests).
 -   [ ] Write unit tests for `auth.js`, `gapi.js`, and `app.js`.
 -   [ ] Write integration tests for the main application flows (login, expense creation, offline mode).
+
+## 9. Future Enhancements
+
+-   [ ] Persist consent (silent consent does not work with token model).
+
+    Our attempts to implement seamless, silent consent (where the user wouldn't need to re-authenticate if they had previously consented) encountered persistent issues with browser popup blockers. Even when using the `prompt: 'none'` option, the Google Identity Services library would attempt to open a hidden popup or iframe, which was then blocked by browser security settings or extensions. This led to a less smooth user experience than desired. The current solution requires an explicit user click to sign in, ensuring reliability but sacrificing some convenience for returning users. Future work should explore more robust methods for persisting consent in a web environment, potentially by investigating alternative Google authentication flows or server-side solutions.
+
+-   [ ] Optimize loading expenses to only load necessary rows, for most recent 5 transactions.
+
+    To display only the most recent 5 transactions, the current implementation makes two API calls to the Google Sheets API: one to determine the total number of rows with data, and a second to fetch the last 5 rows based on that count. While this works, it's not ideal for very large sheets as the initial row-counting call can be inefficient. The goal is to find a more optimized approach that can retrieve the last N rows in a single, more performant API call, or a method that scales better with sheet size.
