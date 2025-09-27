@@ -19,7 +19,7 @@ This document outlines the client-side design for a simple expense tracker that 
 │   ├───app.js         # Main application logic, UI updates, event handling
 │   ├───auth.js        # Google Sign-In and authorization logic
 │   ├───gapi.js        # Google Sheets API interaction logic
-│   └───config.js      # Configuration (Client ID, Spreadsheet ID)
+│   └───config.js      # Configuration (Client ID)
 └───README.md
 ```
 
@@ -114,32 +114,31 @@ This logic uses the **Google API Client Library for JavaScript (GAPI)**.
     }
     ```
 
-3.  **Reading from the Sheet (Get Expenses):** To get data, we use `gapi.client.sheets.spreadsheets.values.get`.
+3.  **Reading from the Sheet (Get Expenses):** To get data, we use `gapi.client.sheets.spreadsheets.values.get`. The function is designed to support pagination.
 
     ```javascript
     // Example from gapi.js
-    import { SPREADSHEET_ID } from './config.js';
-
-    async function getExpenses() {
+    async function getExpenses(spreadsheetId, sheetName, limit = 5, offset = 0) {
+      // ... logic to calculate range based on limit and offset ...
       const response = await gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Expenses!A2:D', // Assumes a sheet named "Expenses" and data in columns A-D, starting at row 2
+        spreadsheetId: spreadsheetId,
+        range: calculatedRange, // e.g., 'Expenses!A96:D100'
       });
-      return response.result.values || [];
+      // ... logic to determine total expenses ...
+      return { expenses: response.result.values || [], totalExpenses: total };
     }
     ```
 
-4.  **Writing to the Sheet (Add Expense):** To add a new row, we use `gapi.client.sheets.spreadsheets.values.append`.
+4.  **Writing to the Sheet (Add Expense):** To add a new row that correctly becomes part of a table, we use `gapi.client.sheets.spreadsheets.values.append` with the `insertDataOption` parameter.
 
     ```javascript
     // Example from gapi.js
-    import { SPREADSHEET_ID } from './config.js';
-
-    async function addExpense(date, description, category, amount) {
+    async function addExpense(spreadsheetId, sheetName, date, description, category, amount) {
       const response = await gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Expenses!A1', // Appending to the "Expenses" sheet
+        spreadsheetId: spreadsheetId,
+        range: sheetName, // Appending to the sheet
         valueInputOption: 'USER_ENTERED', // So "1/1/2024" is treated as a date
+        insertDataOption: 'INSERT_ROWS', // Ensures the new row is part of the table
         resource: {
           values: [
             [date, description, category, amount]
@@ -283,11 +282,19 @@ This is the proposed HTML structure with placeholder elements that the JavaScrip
     </div>
 
     <!-- Google Client Libraries -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" defer></script>
+    <script src="https://apis.google.com/js/api.js?onload=onGapiLoad" defer></script>
     
-    <!-- Main Application Script -->
-    <script type="module" src="js/app.js"></script>
+    <script>
+        function onGapiLoad() {
+            // GAPI is loaded. Now dynamically import and start the app.
+            import('./js/app.js')
+              .then(module => {
+                module.main();
+              })
+              .catch(err => console.error('Failed to load app module:', err));
+        }
+    </script>
 
     <script>
         if ('serviceWorker' in navigator) {
