@@ -22,6 +22,11 @@ const spreadsheetIdInput = document.getElementById('spreadsheet-id');
 const sheetNameInput = document.getElementById('sheet-name');
 const shareableLinkInput = document.getElementById('shareable-link');
 const copyLinkButton = document.getElementById('copy-link-button');
+const fetchMoreButton = document.getElementById('fetch-more-button');
+
+let allExpenses = [];
+let totalExpenses = 0;
+let isLoadingMore = false;
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
@@ -107,7 +112,7 @@ async function handleAuthResponse(tokenResponse) {
 
     if (spreadsheetId && sheetName) {
       showLoggedInView();
-      loadExpenses();
+      await loadExpenses();
     } else {
       showSpreadsheetSelection();
     }
@@ -118,7 +123,6 @@ async function handleAuthResponse(tokenResponse) {
 }
 
 async function loadExpenses() {
-  let expenses = [];
   const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
   const sheetName = localStorage.getItem('selected_sheet_name');
 
@@ -129,7 +133,9 @@ async function loadExpenses() {
 
   if (navigator.onLine) {
     try {
-      expenses = await getExpenses(spreadsheetId, sheetName);
+      const result = await getExpenses(spreadsheetId, sheetName, 5, 0);
+      allExpenses = result.expenses;
+      totalExpenses = result.totalExpenses;
     } catch (error) {
       if (error.status === 401) {
         handleSignOutClick();
@@ -138,8 +144,30 @@ async function loadExpenses() {
       }
     }
   }
-  const pendingExpenses = getPendingExpenses();
-  renderExpenses(expenses, pendingExpenses);
+  renderExpenses();
+}
+
+async function handleFetchMoreClick() {
+  if (isLoadingMore) {
+    return;
+  }
+
+  isLoadingMore = true;
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+  const offset = allExpenses.length;
+
+  try {
+    const result = await getExpenses(spreadsheetId, sheetName, 5, offset);
+    // Prepend older expenses to the list
+    allExpenses.push(...result.expenses);
+    renderExpenses();
+  } catch (error) {
+    console.error('Error fetching more expenses:', error);
+    // Optionally, show an error to the user
+  } finally {
+    isLoadingMore = false;
+  }
 }
 
 async function loadSpreadsheetDetails() {
@@ -176,36 +204,37 @@ async function loadSpreadsheetDetails() {
   };
 }
 
-function renderExpenses(expenses, pendingExpenses) {
+function renderExpenses() {
   const transactionList = document.getElementById('transaction-list');
   transactionList.innerHTML = ''; // Clear the list
 
-  const allExpenses = [...expenses, ...pendingExpenses];
-  const recentExpenses = allExpenses.slice(-5);
+  const pendingExpenses = getPendingExpenses();
+  const combinedExpenses = [...allExpenses];
 
-  // Reverse the order of recentExpenses to show newest on top
-  recentExpenses.reverse();
+  // Visually distinguish pending expenses
+  pendingExpenses.forEach(expense => {
+    const li = document.createElement('li');
+    li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
+    transactionList.appendChild(li);
+  });
 
-  if (recentExpenses.length > 0) {
-    recentExpenses.forEach((expense, index) => {
+  if (combinedExpenses.length > 0) {
+    combinedExpenses.forEach((expense) => {
       const li = document.createElement('li');
-      let textContent = '';
-      if (Array.isArray(expense)) {
-        textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - ${expense[3]}`;
-      } else {
-        textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price}`;
-      }
-
-      if (index >= expenses.length) {
-        textContent += ' (Not Synced)';
-      }
-      li.textContent = textContent;
+      li.textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - ${expense[3]}`;
       transactionList.appendChild(li);
     });
-  } else {
+  } else if (pendingExpenses.length === 0) {
     const li = document.createElement('li');
     li.textContent = 'No expenses found.';
     transactionList.appendChild(li);
+  }
+
+  // Show or hide the "Show More" button
+  if (allExpenses.length >= totalExpenses) {
+    fetchMoreButton.style.display = 'none';
+  } else {
+    fetchMoreButton.style.display = 'block';
   }
 }
 
@@ -220,11 +249,12 @@ export function main() {
   signOutButton.addEventListener('click', handleSignOutClick);
   switchButton.addEventListener('click', handleSwitchClick);
   saveSpreadsheetButton.addEventListener('click', handleSaveSpreadsheetClick);
+  fetchMoreButton.addEventListener('click', handleFetchMoreClick);
 
   const expenseForm = document.getElementById('expense-form');
   expenseForm.addEventListener('submit', handleAddExpense);
 
-  initGapiClient(() => {
+  initGapiClient(async () => {
     initGoogleAuth(handleAuthResponse);
 
     // Check for query parameters
@@ -247,7 +277,7 @@ export function main() {
         const sheetName = localStorage.getItem('selected_sheet_name');
         if (spreadsheetId && sheetName) {
           showLoggedInView();
-          loadExpenses();
+          await loadExpenses();
         } else {
           showSpreadsheetSelection();
         }
@@ -283,8 +313,19 @@ async function handleAddExpense(event) {
 
   if (navigator.onLine) {
     await addExpense(spreadsheetId, sheetName, date, name, category, price);
+    
+    // Format the data to match the API response format
+    const [year, month, day] = date.split('-');
+    const formattedDate = `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
+    const formattedPrice = parseFloat(price).toFixed(2);
+
+    // Manually update local state instead of reloading
+    allExpenses.unshift([formattedDate, name, category, formattedPrice]);
+    totalExpenses++;
+    renderExpenses();
   } else {
     savePendingExpense(expense);
+    renderExpenses(); // Re-render to show the pending expense
   }
 
   // Clear the form
@@ -292,8 +333,6 @@ async function handleAddExpense(event) {
   document.getElementById('expense-name').value = '';
   document.getElementById('expense-category').value = '';
   document.getElementById('expense-price').value = '';
-
-  loadExpenses();
 }
 
 function getPendingExpenses() {
@@ -328,7 +367,7 @@ async function syncPendingExpenses() {
       );
     }
     localStorage.removeItem('pending-expenses');
-    loadExpenses();
+    await loadExpenses();
   }
 }
 
