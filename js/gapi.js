@@ -57,6 +57,7 @@ export async function addExpense(spreadsheetId, sheetName, date, description, ca
     spreadsheetId: spreadsheetId,
     range: sheetName, // Appending to the sheet
     valueInputOption: 'USER_ENTERED', // So "1/1/2024" is treated as a date
+    insertDataOption: 'INSERT_ROWS', // This will insert a new row for the expense
     resource: {
       values: [
         [date, description, category, amount]
