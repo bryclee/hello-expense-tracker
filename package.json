@@ -1,0 +1,29 @@
+{
+  "name": "hello-expense-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "service-worker.js",
+  "scripts": {
+    "server": "python3 -m http.server 8000",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && mv dist/service-worker.js .",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bryclee/hello-expense-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bryclee/hello-expense-tracker/issues"
+  },
+  "homepage": "https://github.com/bryclee/hello-expense-tracker#readme",
+  "devDependencies": {
+    "@types/gapi": "^0.0.47",
+    "@types/gapi.client.sheets-v4": "^0.0.4",
+    "@types/google.accounts": "^0.0.18",
+    "typescript": "^5.9.2"
+  }
+}

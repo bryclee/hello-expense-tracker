@@ -18,9 +18,9 @@ const switchButton = document.getElementById('switch-button');
 const saveSpreadsheetButton = document.getElementById(
   'save-spreadsheet-button'
 );
-const spreadsheetIdInput = document.getElementById('spreadsheet-id');
-const sheetNameInput = document.getElementById('sheet-name');
-const shareableLinkInput = document.getElementById('shareable-link');
+const spreadsheetIdInput = getInputElementById('spreadsheet-id');
+const sheetNameInput = getInputElementById('sheet-name');
+const shareableLinkInput = getInputElementById('shareable-link');
 const copyLinkButton = document.getElementById('copy-link-button');
 const fetchMoreButton = document.getElementById('fetch-more-button');
 
@@ -43,7 +43,7 @@ function showLoggedInView() {
   loadingIndicator.style.display = 'none';
   spreadsheetSelection.style.display = 'none';
   switchButton.style.display = 'block';
-  document.getElementById('expense-date').valueAsDate = new Date();
+  getInputElementById('expense-date').valueAsDate = new Date();
   loadSpreadsheetDetails();
 }
 
@@ -55,7 +55,10 @@ function showLoggedOutView() {
   switchButton.style.display = 'none';
 }
 
-function showSpreadsheetSelection(querySpreadsheetId = null, querySheetName = null) {
+function showSpreadsheetSelection(
+  querySpreadsheetId = null,
+  querySheetName = null
+) {
   loggedInView.style.display = 'none';
   loggedOutView.style.display = 'none';
   loadingIndicator.style.display = 'none';
@@ -63,8 +66,10 @@ function showSpreadsheetSelection(querySpreadsheetId = null, querySheetName = nu
   switchButton.style.display = 'none';
 
   // Prefill current details
-  spreadsheetIdInput.value = querySpreadsheetId || localStorage.getItem('selected_spreadsheet_id') || '';
-  sheetNameInput.value = querySheetName || localStorage.getItem('selected_sheet_name') || 'Expenses';
+  spreadsheetIdInput.value =
+    querySpreadsheetId || localStorage.getItem('selected_spreadsheet_id') || '';
+  sheetNameInput.value =
+    querySheetName || localStorage.getItem('selected_sheet_name') || 'Expenses';
 }
 
 function handleSwitchClick() {
@@ -183,7 +188,7 @@ async function loadSpreadsheetDetails() {
   const spreadsheetTitle = spreadsheetDetails.properties.title;
   const detailsElement = document.getElementById('spreadsheet-details');
   const spreadsheetTitleSpan = document.getElementById('spreadsheet-title');
-  const spreadsheetLink = document.getElementById('spreadsheet-link');
+  const spreadsheetLink = getAnchorElementById('spreadsheet-link');
 
   spreadsheetTitleSpan.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
   spreadsheetLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
@@ -212,7 +217,7 @@ function renderExpenses() {
   const combinedExpenses = [...allExpenses];
 
   // Visually distinguish pending expenses
-  pendingExpenses.forEach(expense => {
+  pendingExpenses.forEach((expense) => {
     const li = document.createElement('li');
     li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
     transactionList.appendChild(li);
@@ -236,6 +241,30 @@ function renderExpenses() {
   } else {
     fetchMoreButton.style.display = 'block';
   }
+}
+
+function getSelectElementById(id: string): HTMLSelectElement {
+  const element = document.getElementById(id);
+  if (!(element instanceof HTMLSelectElement)) {
+    throw new Error(`Element with id '${id}' is not an HTMLSelectElement.`);
+  }
+  return element;
+}
+
+function getInputElementById(id: string): HTMLInputElement {
+  const element = document.getElementById(id);
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error(`Element with id '${id}' is not an HTMLInputElement.`);
+  }
+  return element;
+}
+
+function getAnchorElementById(id: string): HTMLAnchorElement {
+  const element = document.getElementById(id);
+  if (!(element instanceof HTMLAnchorElement)) {
+    throw new Error(`Element with id '${id}' is not an HTMLAnchorElement.`);
+  }
+  return element;
 }
 
 export function main() {
@@ -295,10 +324,10 @@ export function main() {
 async function handleAddExpense(event) {
   event.preventDefault();
 
-  const date = document.getElementById('expense-date').value;
-  const name = document.getElementById('expense-name').value;
-  const category = document.getElementById('expense-category').value;
-  const price = document.getElementById('expense-price').value;
+  const date = getInputElementById('expense-date').value;
+  const name = getInputElementById('expense-name').value;
+  const category = getSelectElementById('expense-category').value;
+  const price = getInputElementById('expense-price').value;
 
   const expense = { date, name, category, price };
 
@@ -313,7 +342,7 @@ async function handleAddExpense(event) {
 
   if (navigator.onLine) {
     await addExpense(spreadsheetId, sheetName, date, name, category, price);
-    
+
     // Format the data to match the API response format
     const [year, month, day] = date.split('-');
     const formattedDate = `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
@@ -329,10 +358,10 @@ async function handleAddExpense(event) {
   }
 
   // Clear the form
-  document.getElementById('expense-date').valueAsDate = new Date();
-  document.getElementById('expense-name').value = '';
-  document.getElementById('expense-category').value = '';
-  document.getElementById('expense-price').value = '';
+  getInputElementById('expense-date').valueAsDate = new Date();
+  getInputElementById('expense-name').value = '';
+  getSelectElementById('expense-category').value = '';
+  getInputElementById('expense-price').value = '';
 }
 
 function getPendingExpenses() {
@@ -370,5 +399,3 @@ async function syncPendingExpenses() {
     await loadExpenses();
   }
 }
-
-

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "lib": [
+      "es2016",
+      "dom",
+      "webworker"
+    ],
+    "module": "es2020",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noImplicitAny": false
+  },
+  "include": ["js/**/*.ts", "service-worker.ts"],
+  "exclude": ["node_modules"]
+}
