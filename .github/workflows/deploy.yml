@@ -19,10 +19,16 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+      - name: Prepare assets for deployment
+        run: |
+          mkdir assets
+          mv index.html assets/
+          mv dist assets/
+          mv service-worker.js assets/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './assets'
 
   deploy:
     needs: build
