@@ -1,132 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Expense Tracker</title>
     <!-- Basic styling can be added here -->
     <style>
-        body { font-family: sans-serif; padding: 2em; }
-        #logged-in-view, #logged-out-view { display: none; }
-        form { margin-bottom: 2em; }
-        form > div { margin-bottom: 1em; }
-        label { display: inline-block; width: 80px; }
+      body {
+        font-family: sans-serif;
+        padding: 2em;
+      }
+      #logged-in-view,
+      #logged-out-view {
+        display: none;
+      }
+      form {
+        margin-bottom: 2em;
+      }
+      form > div {
+        margin-bottom: 1em;
+      }
+      label {
+        display: inline-block;
+        width: 80px;
+      }
     </style>
-</head>
-<body>
-
-    <div id="offline-indicator" style="display: none; background-color: #ffc107; padding: 1em; text-align: center;">
-        You are currently offline. Your expenses will be saved locally and synced when you are back online.
+  </head>
+  <body>
+    <div
+      id="offline-indicator"
+      style="
+        display: none;
+        background-color: #ffc107;
+        padding: 1em;
+        text-align: center;
+      "
+    >
+      You are currently offline. Your expenses will be saved locally and synced
+      when you are back online.
     </div>
 
     <h1>Expense Tracker</h1>
-    <div id="spreadsheet-details" style="font-style: italic; margin-bottom: 1em;">
-        <span id="spreadsheet-title"></span>
+    <div
+      id="spreadsheet-details"
+      style="font-style: italic; margin-bottom: 1em"
+    >
+      <span id="spreadsheet-title"></span>
     </div>
-    <button id="switch-button" style="display: none;">Spreadsheet Details</button>
+    <button id="switch-button" style="display: none">
+      Spreadsheet Details
+    </button>
 
-    <div id="spreadsheet-selection" style="display: none;">
-        <h3>Select Spreadsheet</h3>
-        <div>
-            <label for="spreadsheet-id">Spreadsheet ID</label>
-            <input type="text" id="spreadsheet-id" size="50">
-        </div>
-        <div>
-            <label for="sheet-name">Sheet Name</label>
-            <input type="text" id="sheet-name" value="Expenses">
-        </div>
-        <button id="save-spreadsheet-button">Save</button>
-        <a id="spreadsheet-link" href="#" target="_blank" style="margin-left: 10px;">View Sheet</a>
-        <div id="shareable-link-container" style="margin-top: 1em;">
-            <label for="shareable-link">Shareable Link:</label>
-            <input type="text" id="shareable-link" size="60" readonly>
-            <button id="copy-link-button">Copy</button>
-        </div>
+    <div id="spreadsheet-selection" style="display: none">
+      <h3>Select Spreadsheet</h3>
+      <div>
+        <label for="spreadsheet-id">Spreadsheet ID</label>
+        <input type="text" id="spreadsheet-id" size="50" />
+      </div>
+      <div>
+        <label for="sheet-name">Sheet Name</label>
+        <input type="text" id="sheet-name" value="Expenses" />
+      </div>
+      <button id="save-spreadsheet-button">Save</button>
+      <a
+        id="spreadsheet-link"
+        href="#"
+        target="_blank"
+        style="margin-left: 10px"
+        >View Sheet</a
+      >
+      <div id="shareable-link-container" style="margin-top: 1em">
+        <label for="shareable-link">Shareable Link:</label>
+        <input type="text" id="shareable-link" size="60" readonly />
+        <button id="copy-link-button">Copy</button>
+      </div>
     </div>
-
-    <div id="loading-indicator">Loading...</div>
 
     <!-- LOGGED-OUT VIEW -->
     <div id="logged-out-view">
-        <p>A simple app to track your expenses using Google Sheets.</p>
-        <p>To use the app, please sign in with your Google Account. This will grant the application permission to create and manage a Google Sheet in your account.</p>
-        <button id="sign-in-button">Sign in with Google</button>
+      <p>A simple app to track your expenses using Google Sheets.</p>
+      <p>
+        To use the app, please sign in with your Google Account. This will grant
+        the application permission to create and manage a Google Sheet in your
+        account.
+      </p>
+      <button id="sign-in-button">Sign in with Google</button>
     </div>
 
     <!-- LOGGED-IN VIEW -->
     <div id="logged-in-view">
-        <button id="sign-out-button">Sign Out</button>
-        
-        <hr>
+      <button id="sign-out-button">Sign Out</button>
 
-        <h2>Add a New Expense</h2>
-        <form id="expense-form">
-            <div>
-                <label for="expense-date">Date</label>
-                <input type="date" id="expense-date" required>
-            </div>
-            <div>
-                <label for="expense-name">Name</label>
-                <input type="text" id="expense-name" placeholder="Coffee with friends" required autofocus>
-            </div>
-            <div>
-                <label for="expense-category">Category</label>
-                <select id="expense-category" required>
-                    <option value="" disabled selected>Select a category</option>
-                    <option>House</option>
-                    <option>Utilities</option>
-                    <option>Transportation</option>
-                    <option>Food</option>
-                    <option>Fun</option>
-                    <option>Vacation</option>
-                    <option>Pet</option>
-                    <option>Personal</option>
-                    <option>Kids</option>
-                    <option>Misc</option>
-                </select>
-            </div>
-            <div>
-                <label for="expense-price">Price</label>
-                <input type="number" id="expense-price" placeholder="15.50" step="0.01" required>
-            </div>
-            <button type="submit">Add Expense</button>
-        </form>
+      <hr />
 
-        <hr>
+      <h2>Add a New Expense</h2>
+      <form id="expense-form">
+        <div>
+          <label for="expense-date">Date</label>
+          <input type="date" id="expense-date" required />
+        </div>
+        <div>
+          <label for="expense-name">Name</label>
+          <input
+            type="text"
+            id="expense-name"
+            placeholder="Coffee with friends"
+            required
+            autofocus
+          />
+        </div>
+        <div>
+          <label for="expense-category">Category</label>
+          <select id="expense-category" required>
+            <option value="" disabled selected>Select a category</option>
+            <option>House</option>
+            <option>Utilities</option>
+            <option>Transportation</option>
+            <option>Food</option>
+            <option>Fun</option>
+            <option>Vacation</option>
+            <option>Pet</option>
+            <option>Personal</option>
+            <option>Kids</option>
+            <option>Misc</option>
+          </select>
+        </div>
+        <div>
+          <label for="expense-price">Price</label>
+          <input
+            type="number"
+            id="expense-price"
+            placeholder="15.50"
+            step="0.01"
+            required
+          />
+        </div>
+        <button type="submit">Add Expense</button>
+      </form>
 
-        <h2>Recent Transactions</h2>
-        <ul id="transaction-list">
-            <!-- Transactions will be rendered here by JavaScript -->
-        </ul>
-        <button id="fetch-more-button">Show More</button>
+      <hr />
+
+      <h2>Recent Transactions</h2>
+      <ul id="transaction-list">
+        <!-- Transactions will be rendered here by JavaScript -->
+      </ul>
+      <button id="fetch-more-button">Show More</button>
     </div>
 
     <!-- Google Client Libraries -->
     <script src="https://accounts.google.com/gsi/client" defer></script>
-    <script src="https://apis.google.com/js/api.js?onload=onGapiLoad" defer></script>
-    
+    <script
+      src="https://apis.google.com/js/api.js?onload=onGapiLoad"
+      defer
+    ></script>
+
     <script>
-        function onGapiLoad() {
-            // GAPI is loaded. Now dynamically import and start the app.
-            import('./dist/js/app.js')
-              .then(module => {
-                module.main();
-              })
-              .catch(err => console.error('Failed to load app module:', err));
-        }
+      function onGapiLoad() {
+        // GAPI is loaded. Now dynamically import and start the app.
+        import('./dist/js/app.js')
+          .then((module) => {
+            module.main();
+          })
+          .catch((err) => console.error('Failed to load app module:', err));
+      }
     </script>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-        }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('/service-worker.js')
+          .then((registration) => {
+            console.log(
+              'Service Worker registered with scope:',
+              registration.scope
+            );
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      }
     </script>
-
-</body>
+  </body>
 </html>

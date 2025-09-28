@@ -9,20 +9,17 @@ import {
 
 const loggedInView = document.getElementById('logged-in-view');
 const loggedOutView = document.getElementById('logged-out-view');
-const signInButton = document.getElementById('sign-in-button');
-const signOutButton = document.getElementById('sign-out-button');
-const loadingIndicator = document.getElementById('loading-indicator');
+const signInButton = getButtonElementById('sign-in-button');
+const signOutButton = getButtonElementById('sign-out-button');
 const offlineIndicator = document.getElementById('offline-indicator');
 const spreadsheetSelection = document.getElementById('spreadsheet-selection');
-const switchButton = document.getElementById('switch-button');
-const saveSpreadsheetButton = document.getElementById(
-  'save-spreadsheet-button'
-);
+const switchButton = getButtonElementById('switch-button');
+const saveSpreadsheetButton = getButtonElementById('save-spreadsheet-button');
 const spreadsheetIdInput = getInputElementById('spreadsheet-id');
 const sheetNameInput = getInputElementById('sheet-name');
 const shareableLinkInput = getInputElementById('shareable-link');
-const copyLinkButton = document.getElementById('copy-link-button');
-const fetchMoreButton = document.getElementById('fetch-more-button');
+const copyLinkButton = getButtonElementById('copy-link-button');
+const fetchMoreButton = getButtonElementById('fetch-more-button');
 
 let allExpenses = [];
 let totalExpenses = 0;
@@ -40,7 +37,6 @@ function updateOnlineStatus() {
 function showLoggedInView() {
   loggedInView.style.display = 'block';
   loggedOutView.style.display = 'none';
-  loadingIndicator.style.display = 'none';
   spreadsheetSelection.style.display = 'none';
   switchButton.style.display = 'block';
   getInputElementById('expense-date').valueAsDate = new Date();
@@ -50,7 +46,6 @@ function showLoggedInView() {
 function showLoggedOutView() {
   loggedInView.style.display = 'none';
   loggedOutView.style.display = 'block';
-  loadingIndicator.style.display = 'none';
   spreadsheetSelection.style.display = 'none';
   switchButton.style.display = 'none';
 }
@@ -61,7 +56,6 @@ function showSpreadsheetSelection(
 ) {
   loggedInView.style.display = 'none';
   loggedOutView.style.display = 'none';
-  loadingIndicator.style.display = 'none';
   spreadsheetSelection.style.display = 'block';
   switchButton.style.display = 'none';
 
@@ -158,6 +152,10 @@ async function handleFetchMoreClick() {
   }
 
   isLoadingMore = true;
+  const originalButtonText = fetchMoreButton.textContent;
+  fetchMoreButton.textContent = 'Loading...';
+  fetchMoreButton.disabled = true;
+
   const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
   const sheetName = localStorage.getItem('selected_sheet_name');
   const offset = allExpenses.length;
@@ -172,6 +170,8 @@ async function handleFetchMoreClick() {
     // Optionally, show an error to the user
   } finally {
     isLoadingMore = false;
+    fetchMoreButton.textContent = originalButtonText;
+    fetchMoreButton.disabled = false;
   }
 }
 
@@ -241,6 +241,14 @@ function renderExpenses() {
   } else {
     fetchMoreButton.style.display = 'block';
   }
+}
+
+function getButtonElementById(id: string): HTMLButtonElement {
+  const element = document.getElementById(id);
+  if (!(element instanceof HTMLButtonElement)) {
+    throw new Error(`Element with id '${id}' is not an HTMLButtonElement.`);
+  }
+  return element;
 }
 
 function getSelectElementById(id: string): HTMLSelectElement {
@@ -324,6 +332,14 @@ export function main() {
 async function handleAddExpense(event) {
   event.preventDefault();
 
+  const expenseForm = document.getElementById('expense-form');
+  const addButton = expenseForm.querySelector(
+    'button[type="submit"]'
+  ) as HTMLButtonElement;
+  const originalButtonText = addButton.textContent;
+  addButton.textContent = 'Saving...';
+  addButton.disabled = true;
+
   const date = getInputElementById('expense-date').value;
   const name = getInputElementById('expense-name').value;
   const category = getSelectElementById('expense-category').value;
@@ -362,6 +378,9 @@ async function handleAddExpense(event) {
   getInputElementById('expense-name').value = '';
   getSelectElementById('expense-category').value = '';
   getInputElementById('expense-price').value = '';
+
+  addButton.textContent = originalButtonText;
+  addButton.disabled = false;
 }
 
 function getPendingExpenses() {
