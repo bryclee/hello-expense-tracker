@@ -1,6 +1,8 @@
+import { Expense } from './types.js';
+
 const API_DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 
-export function initGapiClient(callback: any) {
+export function initGapiClient(callback: () => void) {
   gapi.load('client', async () => {
     await gapi.client.init({
       discoveryDocs: [API_DISCOVERY_DOC],
@@ -9,11 +11,11 @@ export function initGapiClient(callback: any) {
   });
 }
 
-export function setGapiToken(token: any) {
+export function setGapiToken(token: google.accounts.oauth2.TokenResponse) {
   gapi.client.setToken(token);
 }
 
-export async function getExpenses(spreadsheetId: any, sheetName: any, limit = 5, offset = 0) {
+export async function getExpenses(spreadsheetId: string, sheetName: string, limit = 5, offset = 0): Promise<{ expenses: Expense[], totalExpenses: number }> {
   // First, get the properties of the sheet to find the total number of rows with data.
   const sheetMetadata = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
@@ -46,13 +48,20 @@ export async function getExpenses(spreadsheetId: any, sheetName: any, limit = 5,
   });
 
   // The API returns rows in ascending order, so we reverse to get newest first.
-  const expenses = response.result.values || [];
-  expenses.reverse();
+  const rows = response.result.values || [];
+  rows.reverse();
+
+  const expenses: Expense[] = rows.map(row => ({
+    date: row[0],
+    name: row[1],
+    category: row[2],
+    price: row[3],
+  }));
 
   return { expenses: expenses, totalExpenses: totalExpenses };
 }
 
-export async function addExpense(spreadsheetId: any, sheetName: any, date: any, description: any, category: any, amount: any) {
+export async function addExpense(spreadsheetId: string, sheetName: string, date: string, description: string, category: string, amount: string) {
   const response = await gapi.client.sheets.spreadsheets.values.append({
     spreadsheetId: spreadsheetId,
     range: sheetName, // Appending to the sheet
@@ -67,7 +76,7 @@ export async function addExpense(spreadsheetId: any, sheetName: any, date: any, 
   return response.result;
 }
 
-export async function getSpreadsheetDetails(spreadsheetId: any) {
+export async function getSpreadsheetDetails(spreadsheetId: string) {
   const response = await gapi.client.sheets.spreadsheets.get({
     spreadsheetId: spreadsheetId,
   });

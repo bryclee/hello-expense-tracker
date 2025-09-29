@@ -6,6 +6,7 @@ import {
   addExpense,
   getSpreadsheetDetails,
 } from './gapi.js';
+import { Expense } from './types.js';
 
 const loggedInView = document.getElementById('logged-in-view');
 const loggedOutView = document.getElementById('logged-out-view');
@@ -21,7 +22,7 @@ const shareableLinkInput = getInputElementById('shareable-link');
 const copyLinkButton = getButtonElementById('copy-link-button');
 const fetchMoreButton = getButtonElementById('fetch-more-button');
 
-let allExpenses: any[] = [];
+let allExpenses: Expense[] = [];
 let totalExpenses = 0;
 let isLoadingMore = false;
 
@@ -100,12 +101,12 @@ function handleSignOutClick() {
   showLoggedOutView();
 }
 
-async function handleAuthResponse(tokenResponse: any) {
+async function handleAuthResponse(tokenResponse: google.accounts.oauth2.TokenResponse) {
   // Case 1: Successful login (either silent or interactive)
   if (tokenResponse && tokenResponse.access_token) {
     localStorage.setItem('user_has_signed_in', 'true');
     const now = new Date();
-    const expirationTime = now.getTime() + tokenResponse.expires_in * 1000;
+    const expirationTime = now.getTime() + Number(tokenResponse.expires_in) * 1000;
     const tokenWithExpiration = { ...tokenResponse, expirationTime };
     localStorage.setItem('gapi_token', JSON.stringify(tokenWithExpiration));
     setGapiToken(tokenResponse);
@@ -139,8 +140,8 @@ async function loadExpenses() {
       const result = await getExpenses(spreadsheetId, sheetName, 5, 0);
       allExpenses = result.expenses;
       totalExpenses = result.totalExpenses;
-    } catch (error: any) {
-      if (error.status === 401) {
+    } catch (error: unknown) {
+      if ((error as any).status === 401) {
         handleSignOutClick();
       } else {
         console.error('Error loading expenses:', error);
@@ -222,10 +223,10 @@ function renderExpenses() {
   if (transactionList) transactionList.innerHTML = ''; // Clear the list
 
   const pendingExpenses = getPendingExpenses();
-  const combinedExpenses: any[] = [...allExpenses];
+  const combinedExpenses: Expense[] = [...allExpenses];
 
   // Visually distinguish pending expenses
-  pendingExpenses.forEach((expense: any) => {
+  pendingExpenses.forEach((expense: Expense) => {
     const li = document.createElement('li');
     li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
     if (transactionList) transactionList.appendChild(li);
@@ -234,7 +235,7 @@ function renderExpenses() {
   if (combinedExpenses.length > 0) {
     combinedExpenses.forEach((expense) => {
       const li = document.createElement('li');
-      li.textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - ${expense[3]}`;
+      li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price}`;
       if (transactionList) transactionList.appendChild(li);
     });
   } else if (pendingExpenses.length === 0) {
@@ -337,7 +338,7 @@ export function main() {
   });
 }
 
-async function handleAddExpense(event: any) {
+async function handleAddExpense(event: SubmitEvent) {
   event.preventDefault();
 
   const expenseForm = document.getElementById('expense-form');
@@ -356,7 +357,7 @@ async function handleAddExpense(event: any) {
   const category = getSelectElementById('expense-category').value;
   const price = getInputElementById('expense-price').value;
 
-  const expense = { date, name, category, price };
+  const expense: Expense = { date, name, category, price };
 
   const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
   const sheetName = localStorage.getItem('selected_sheet_name');
@@ -370,13 +371,8 @@ async function handleAddExpense(event: any) {
   if (navigator.onLine) {
     await addExpense(spreadsheetId, sheetName, date, name, category, price);
 
-    // Format the data to match the API response format
-    const [year, month, day] = date.split('-');
-    const formattedDate = `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
-    const formattedPrice = parseFloat(price).toFixed(2);
-
     // Manually update local state instead of reloading
-    allExpenses.unshift([formattedDate, name, category, formattedPrice]);
+    allExpenses.unshift(expense);
     totalExpenses++;
     renderExpenses();
   } else {
@@ -394,11 +390,11 @@ async function handleAddExpense(event: any) {
   addButton.disabled = false;
 }
 
-function getPendingExpenses() {
+function getPendingExpenses(): Expense[] {
   return JSON.parse(localStorage.getItem('pending-expenses') || '[]') || [];
 }
 
-function savePendingExpense(expense: any) {
+function savePendingExpense(expense: Expense) {
   const pendingExpenses = getPendingExpenses();
   pendingExpenses.push(expense);
   localStorage.setItem('pending-expenses', JSON.stringify(pendingExpenses));
