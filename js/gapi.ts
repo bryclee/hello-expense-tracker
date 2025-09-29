@@ -1,6 +1,6 @@
 const API_DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 
-export function initGapiClient(callback) {
+export function initGapiClient(callback: any) {
   gapi.load('client', async () => {
     await gapi.client.init({
       discoveryDocs: [API_DISCOVERY_DOC],
@@ -9,11 +9,11 @@ export function initGapiClient(callback) {
   });
 }
 
-export function setGapiToken(token) {
+export function setGapiToken(token: any) {
   gapi.client.setToken(token);
 }
 
-export async function getExpenses(spreadsheetId, sheetName, limit = 5, offset = 0) {
+export async function getExpenses(spreadsheetId: any, sheetName: any, limit = 5, offset = 0) {
   // First, get the properties of the sheet to find the total number of rows with data.
   const sheetMetadata = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
@@ -52,7 +52,7 @@ export async function getExpenses(spreadsheetId, sheetName, limit = 5, offset = 
   return { expenses: expenses, totalExpenses: totalExpenses };
 }
 
-export async function addExpense(spreadsheetId, sheetName, date, description, category, amount) {
+export async function addExpense(spreadsheetId: any, sheetName: any, date: any, description: any, category: any, amount: any) {
   const response = await gapi.client.sheets.spreadsheets.values.append({
     spreadsheetId: spreadsheetId,
     range: sheetName, // Appending to the sheet
@@ -67,7 +67,7 @@ export async function addExpense(spreadsheetId, sheetName, date, description, ca
   return response.result;
 }
 
-export async function getSpreadsheetDetails(spreadsheetId) {
+export async function getSpreadsheetDetails(spreadsheetId: any) {
   const response = await gapi.client.sheets.spreadsheets.get({
     spreadsheetId: spreadsheetId,
   });

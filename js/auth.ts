@@ -1,9 +1,9 @@
 import { CLIENT_ID } from './config.js';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-let tokenClient;
+let tokenClient: any;
 
-export function initGoogleAuth(callback) {
+export function initGoogleAuth(callback: any) {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,

@@ -24,7 +24,7 @@ jobs:
           mkdir assets
           mv index.html assets/
           mv dist assets/
-          mv service-worker.js assets/
+          mv assets/dist/service-worker.js assets/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

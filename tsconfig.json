@@ -10,13 +10,13 @@
     "moduleResolution": "node",
     "outDir": "./dist",
     "rootDir": "./",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    "checkJs": false,
-    "noImplicitAny": false
+    "checkJs": true,
+    "noImplicitAny": true
   },
   "include": ["js/**/*.ts", "service-worker.ts"],
   "exclude": ["node_modules"]

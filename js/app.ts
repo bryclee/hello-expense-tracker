@@ -21,43 +21,47 @@ const shareableLinkInput = getInputElementById('shareable-link');
 const copyLinkButton = getButtonElementById('copy-link-button');
 const fetchMoreButton = getButtonElementById('fetch-more-button');
 
-let allExpenses = [];
+let allExpenses: any[] = [];
 let totalExpenses = 0;
 let isLoadingMore = false;
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
-    offlineIndicator.style.display = 'none';
+    if (offlineIndicator) {
+      offlineIndicator.style.display = 'none';
+    }
     syncPendingExpenses();
   } else {
-    offlineIndicator.style.display = 'block';
+    if (offlineIndicator) {
+      offlineIndicator.style.display = 'block';
+    }
   }
 }
 
 function showLoggedInView() {
-  loggedInView.style.display = 'block';
-  loggedOutView.style.display = 'none';
-  spreadsheetSelection.style.display = 'none';
-  switchButton.style.display = 'block';
+  if (loggedInView) loggedInView.style.display = 'block';
+  if (loggedOutView) loggedOutView.style.display = 'none';
+  if (spreadsheetSelection) spreadsheetSelection.style.display = 'none';
+  if (switchButton) switchButton.style.display = 'block';
   getInputElementById('expense-date').valueAsDate = new Date();
   loadSpreadsheetDetails();
 }
 
 function showLoggedOutView() {
-  loggedInView.style.display = 'none';
-  loggedOutView.style.display = 'block';
-  spreadsheetSelection.style.display = 'none';
-  switchButton.style.display = 'none';
+  if (loggedInView) loggedInView.style.display = 'none';
+  if (loggedOutView) loggedOutView.style.display = 'block';
+  if (spreadsheetSelection) spreadsheetSelection.style.display = 'none';
+  if (switchButton) switchButton.style.display = 'none';
 }
 
 function showSpreadsheetSelection(
-  querySpreadsheetId = null,
-  querySheetName = null
+  querySpreadsheetId: string | null = null,
+  querySheetName: string | null = null
 ) {
-  loggedInView.style.display = 'none';
-  loggedOutView.style.display = 'none';
-  spreadsheetSelection.style.display = 'block';
-  switchButton.style.display = 'none';
+  if (loggedInView) loggedInView.style.display = 'none';
+  if (loggedOutView) loggedOutView.style.display = 'none';
+  if (spreadsheetSelection) spreadsheetSelection.style.display = 'block';
+  if (switchButton) switchButton.style.display = 'none';
 
   // Prefill current details
   spreadsheetIdInput.value =
@@ -96,7 +100,7 @@ function handleSignOutClick() {
   showLoggedOutView();
 }
 
-async function handleAuthResponse(tokenResponse) {
+async function handleAuthResponse(tokenResponse: any) {
   // Case 1: Successful login (either silent or interactive)
   if (tokenResponse && tokenResponse.access_token) {
     localStorage.setItem('user_has_signed_in', 'true');
@@ -135,7 +139,7 @@ async function loadExpenses() {
       const result = await getExpenses(spreadsheetId, sheetName, 5, 0);
       allExpenses = result.expenses;
       totalExpenses = result.totalExpenses;
-    } catch (error) {
+    } catch (error: any) {
       if (error.status === 401) {
         handleSignOutClick();
       } else {
@@ -161,7 +165,7 @@ async function handleFetchMoreClick() {
   const offset = allExpenses.length;
 
   try {
-    const result = await getExpenses(spreadsheetId, sheetName, 5, offset);
+    const result = await getExpenses(spreadsheetId!, sheetName!, 5, offset);
     // Prepend older expenses to the list
     allExpenses.push(...result.expenses);
     renderExpenses();
@@ -185,12 +189,16 @@ async function loadSpreadsheetDetails() {
   }
 
   const spreadsheetDetails = await getSpreadsheetDetails(spreadsheetId);
+  if (!spreadsheetDetails.properties) {
+    return;
+  }
   const spreadsheetTitle = spreadsheetDetails.properties.title;
   const detailsElement = document.getElementById('spreadsheet-details');
   const spreadsheetTitleSpan = document.getElementById('spreadsheet-title');
   const spreadsheetLink = getAnchorElementById('spreadsheet-link');
 
-  spreadsheetTitleSpan.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
+  if (spreadsheetTitleSpan)
+    spreadsheetTitleSpan.textContent = `Sheet: ${spreadsheetTitle} / ${sheetName}`;
   spreadsheetLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 
   // Construct shareable link
@@ -211,28 +219,28 @@ async function loadSpreadsheetDetails() {
 
 function renderExpenses() {
   const transactionList = document.getElementById('transaction-list');
-  transactionList.innerHTML = ''; // Clear the list
+  if (transactionList) transactionList.innerHTML = ''; // Clear the list
 
   const pendingExpenses = getPendingExpenses();
-  const combinedExpenses = [...allExpenses];
+  const combinedExpenses: any[] = [...allExpenses];
 
   // Visually distinguish pending expenses
-  pendingExpenses.forEach((expense) => {
+  pendingExpenses.forEach((expense: any) => {
     const li = document.createElement('li');
     li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
-    transactionList.appendChild(li);
+    if (transactionList) transactionList.appendChild(li);
   });
 
   if (combinedExpenses.length > 0) {
     combinedExpenses.forEach((expense) => {
       const li = document.createElement('li');
       li.textContent = `${expense[0]} - ${expense[1]} - ${expense[2]} - ${expense[3]}`;
-      transactionList.appendChild(li);
+      if (transactionList) transactionList.appendChild(li);
     });
   } else if (pendingExpenses.length === 0) {
     const li = document.createElement('li');
     li.textContent = 'No expenses found.';
-    transactionList.appendChild(li);
+    if (transactionList) transactionList.appendChild(li);
   }
 
   // Show or hide the "Show More" button
@@ -289,7 +297,7 @@ export function main() {
   fetchMoreButton.addEventListener('click', handleFetchMoreClick);
 
   const expenseForm = document.getElementById('expense-form');
-  expenseForm.addEventListener('submit', handleAddExpense);
+  if (expenseForm) expenseForm.addEventListener('submit', handleAddExpense);
 
   initGapiClient(async () => {
     initGoogleAuth(handleAuthResponse);
@@ -329,10 +337,13 @@ export function main() {
   });
 }
 
-async function handleAddExpense(event) {
+async function handleAddExpense(event: any) {
   event.preventDefault();
 
   const expenseForm = document.getElementById('expense-form');
+  if (!expenseForm) {
+    return;
+  }
   const addButton = expenseForm.querySelector(
     'button[type="submit"]'
   ) as HTMLButtonElement;
@@ -384,10 +395,10 @@ async function handleAddExpense(event) {
 }
 
 function getPendingExpenses() {
-  return JSON.parse(localStorage.getItem('pending-expenses')) || [];
+  return JSON.parse(localStorage.getItem('pending-expenses') || '[]') || [];
 }
 
-function savePendingExpense(expense) {
+function savePendingExpense(expense: any) {
   const pendingExpenses = getPendingExpenses();
   pendingExpenses.push(expense);
   localStorage.setItem('pending-expenses', JSON.stringify(pendingExpenses));
