@@ -141,7 +141,7 @@ async function loadExpenses() {
       allExpenses = result.expenses;
       totalExpenses = result.totalExpenses;
     } catch (error: unknown) {
-      if ((error as any).status === 401) {
+      if (error instanceof Object && 'status' in error && error.status === 401) {
         handleSignOutClick();
       } else {
         console.error('Error loading expenses:', error);
@@ -194,7 +194,6 @@ async function loadSpreadsheetDetails() {
     return;
   }
   const spreadsheetTitle = spreadsheetDetails.properties.title;
-  const detailsElement = document.getElementById('spreadsheet-details');
   const spreadsheetTitleSpan = document.getElementById('spreadsheet-title');
   const spreadsheetLink = getAnchorElementById('spreadsheet-link');
 

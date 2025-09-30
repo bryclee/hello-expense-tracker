@@ -166,6 +166,9 @@
     </script>
 
     <script>
+      /**
+       * TODO: service worker is disabled, because need to rethink how the offline strategy should work, considering how google auth works. 
+       * Note that the service worker was not running in prod anyway due to the difference in path between serving locally and in prod.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker
           .register('/dist/service-worker.js')
@@ -179,7 +182,7 @@
             console.error('Service Worker registration failed:', error);
           });
       }
+      */
     </script>
-
   </body>
 </html>

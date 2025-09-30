@@ -8,7 +8,7 @@ const urlsToCache = [
   '/js/config.js'
 ];
 
-self.addEventListener('install', (event: any) => {
+self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -18,7 +18,7 @@ self.addEventListener('install', (event: any) => {
   );
 });
 
-self.addEventListener('activate', (event: any) => {
+self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event: any) => {
   );
 });
 
-self.addEventListener('fetch', (event: any) => {
+self.addEventListener('fetch', (event: FetchEvent) => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
