@@ -1,4 +1,4 @@
-import { initGoogleAuth, signIn } from './auth.js';
+import { initGoogleAuth, signIn, getUserInfo } from './auth.js';
 import {
   initGapiClient,
   setGapiToken,
@@ -97,6 +97,7 @@ function handleAuthClick() {
 function handleSignOutClick() {
   localStorage.removeItem('gapi_token');
   localStorage.removeItem('user_has_signed_in');
+  localStorage.removeItem('user_email');
   gapi.client.setToken(null);
   showLoggedOutView();
 }
@@ -104,6 +105,8 @@ function handleSignOutClick() {
 async function handleAuthResponse(tokenResponse: google.accounts.oauth2.TokenResponse) {
   // Case 1: Successful login (either silent or interactive)
   if (tokenResponse && tokenResponse.access_token) {
+    const { email } = await getUserInfo(tokenResponse.access_token);
+    localStorage.setItem('user_email', email);
     localStorage.setItem('user_has_signed_in', 'true');
     const now = new Date();
     const expirationTime = now.getTime() + Number(tokenResponse.expires_in) * 1000;
@@ -300,7 +303,8 @@ export function main() {
   if (expenseForm) expenseForm.addEventListener('submit', handleAddExpense);
 
   initGapiClient(async () => {
-    initGoogleAuth(handleAuthResponse);
+    const userEmail = localStorage.getItem('user_email') || undefined;
+    initGoogleAuth(handleAuthResponse, userEmail);
 
     // Check for query parameters
     const urlParams = new URLSearchParams(window.location.search);
