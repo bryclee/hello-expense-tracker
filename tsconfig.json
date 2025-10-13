@@ -19,5 +19,8 @@
     "noImplicitAny": true
   },
   "include": ["js/**/*.ts", "service-worker.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "ts-node": {
+    "files": true
+  }
 }

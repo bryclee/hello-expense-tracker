@@ -1,3 +1,5 @@
+const sw = self as unknown as ServiceWorkerGlobalScope;
+
 const CACHE_NAME = 'expense-tracker-cache-v3';
 const urlsToCache = [
   '/',
@@ -8,7 +10,7 @@ const urlsToCache = [
   '/js/config.js'
 ];
 
-self.addEventListener('install', (event: ExtendableEvent) => {
+sw.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -18,7 +20,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
   );
 });
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+sw.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -32,7 +34,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   );
 });
 
-self.addEventListener('fetch', (event: FetchEvent) => {
+sw.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
