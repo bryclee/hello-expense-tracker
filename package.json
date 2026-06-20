@@ -5,7 +5,7 @@
   "main": "service-worker.js",
   "scripts": {
     "server": "python3 -m http.server 8000",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "build": "tsc",
     "watch": "tsc --watch",
     "lint": "eslint . --ext .ts"
@@ -28,6 +28,8 @@
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
     "eslint": "^9.36.0",
-    "typescript": "^5.9.2"
+    "jsdom": "^27.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }

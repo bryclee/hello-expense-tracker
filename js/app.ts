@@ -8,19 +8,19 @@ import {
 } from './gapi.js';
 import { Expense } from './types.js';
 
-const loggedInView = document.getElementById('logged-in-view');
-const loggedOutView = document.getElementById('logged-out-view');
-const signInButton = getButtonElementById('sign-in-button');
-const signOutButton = getButtonElementById('sign-out-button');
-const offlineIndicator = document.getElementById('offline-indicator');
-const spreadsheetSelection = document.getElementById('spreadsheet-selection');
-const switchButton = getButtonElementById('switch-button');
-const saveSpreadsheetButton = getButtonElementById('save-spreadsheet-button');
-const spreadsheetIdInput = getInputElementById('spreadsheet-id');
-const sheetNameInput = getInputElementById('sheet-name');
-const shareableLinkInput = getInputElementById('shareable-link');
-const copyLinkButton = getButtonElementById('copy-link-button');
-const fetchMoreButton = getButtonElementById('fetch-more-button');
+let loggedInView: HTMLElement | null;
+let loggedOutView: HTMLElement | null;
+let signInButton: HTMLButtonElement;
+let signOutButton: HTMLButtonElement;
+let offlineIndicator: HTMLElement | null;
+let spreadsheetSelection: HTMLElement | null;
+let switchButton: HTMLButtonElement;
+let saveSpreadsheetButton: HTMLButtonElement;
+let spreadsheetIdInput: HTMLInputElement;
+let sheetNameInput: HTMLInputElement;
+let shareableLinkInput: HTMLInputElement;
+let copyLinkButton: HTMLButtonElement;
+let fetchMoreButton: HTMLButtonElement;
 
 let allExpenses: Expense[] = [];
 let totalExpenses = 0;
@@ -287,6 +287,20 @@ function getAnchorElementById(id: string): HTMLAnchorElement {
 }
 
 export function main() {
+  loggedInView = document.getElementById('logged-in-view');
+  loggedOutView = document.getElementById('logged-out-view');
+  signInButton = getButtonElementById('sign-in-button');
+  signOutButton = getButtonElementById('sign-out-button');
+  offlineIndicator = document.getElementById('offline-indicator');
+  spreadsheetSelection = document.getElementById('spreadsheet-selection');
+  switchButton = getButtonElementById('switch-button');
+  saveSpreadsheetButton = getButtonElementById('save-spreadsheet-button');
+  spreadsheetIdInput = getInputElementById('spreadsheet-id');
+  sheetNameInput = getInputElementById('sheet-name');
+  shareableLinkInput = getInputElementById('shareable-link');
+  copyLinkButton = getButtonElementById('copy-link-button');
+  fetchMoreButton = getButtonElementById('fetch-more-button');
+
   console.log('main() called');
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
@@ -393,17 +407,17 @@ async function handleAddExpense(event: SubmitEvent) {
   addButton.disabled = false;
 }
 
-function getPendingExpenses(): Expense[] {
+export function getPendingExpenses(): Expense[] {
   return JSON.parse(localStorage.getItem('pending-expenses') || '[]') || [];
 }
 
-function savePendingExpense(expense: Expense) {
+export function savePendingExpense(expense: Expense) {
   const pendingExpenses = getPendingExpenses();
   pendingExpenses.push(expense);
   localStorage.setItem('pending-expenses', JSON.stringify(pendingExpenses));
 }
 
-async function syncPendingExpenses() {
+export async function syncPendingExpenses() {
   const pendingExpenses = getPendingExpenses();
   const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
   const sheetName = localStorage.getItem('selected_sheet_name');
