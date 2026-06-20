@@ -148,21 +148,32 @@
     </div>
 
     <!-- Google Client Libraries -->
-    <script src="https://accounts.google.com/gsi/client" defer></script>
+    <script>
+      window.gapiLoaded = false;
+      window.gisLoaded = false;
+      window.gapiLoadPromise = new Promise((resolve) => {
+        window.onGapiLoad = () => {
+          window.gapiLoaded = true;
+          resolve();
+        };
+      });
+      window.gisLoadPromise = new Promise((resolve) => {
+        window.onGisLoad = () => {
+          window.gisLoaded = true;
+          resolve();
+        };
+      });
+    </script>
+    <script src="https://accounts.google.com/gsi/client" onload="onGisLoad()" defer></script>
     <script
       src="https://apis.google.com/js/api.js?onload=onGapiLoad"
       defer
     ></script>
 
-    <script>
-      function onGapiLoad() {
-        // GAPI is loaded. Now dynamically import and start the app.
-        import('./dist/js/app.js')
-          .then((module) => {
-            module.main();
-          })
-          .catch((err) => console.error('Failed to load app module:', err));
-      }
+    <!-- Load and start app immediately (offline-first) -->
+    <script type="module">
+      import { main } from './dist/js/app.js';
+      main();
     </script>
 
     <script>

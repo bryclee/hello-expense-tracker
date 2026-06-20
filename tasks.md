@@ -39,7 +39,7 @@
 -   [x] Implement the expense form submission.
 -   [x] Implement the display of recent transactions.
 -   [x] Implement the "Show More" functionality.
--   [ ] Ensure `gapi` is loaded before `initGapiClient` is called in `main`.
+-   [x] Ensure `gapi` is loaded before `initGapiClient` is called in `main`.
 
 ## 7. Offline Capabilities
 
@@ -47,7 +47,7 @@
 -   [x] Implement the offline indicator.
 -   [x] Implement the `localStorage` logic for offline data storage.
 -   [x] Implement the synchronization logic.
--   [ ] Work on the initialization logic when it comes to the service worker and offline flow.
+-   [x] Work on the initialization logic when it comes to the service worker and offline flow.
 
 ## 8. Testing
 

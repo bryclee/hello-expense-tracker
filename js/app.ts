@@ -8,6 +8,15 @@ import {
 } from './gapi.js';
 import { Expense } from './types.js';
 
+interface TokenWithExpiration extends google.accounts.oauth2.TokenResponse {
+  expirationTime: number;
+}
+
+interface CustomWindow extends Window {
+  gapiLoadPromise?: Promise<void>;
+  gisLoadPromise?: Promise<void>;
+}
+
 let loggedInView: HTMLElement | null;
 let loggedOutView: HTMLElement | null;
 let signInButton: HTMLButtonElement;
@@ -25,6 +34,7 @@ let fetchMoreButton: HTMLButtonElement;
 let allExpenses: Expense[] = [];
 let totalExpenses = 0;
 let isLoadingMore = false;
+let isGapiReady = false;
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
@@ -98,7 +108,9 @@ function handleSignOutClick() {
   localStorage.removeItem('gapi_token');
   localStorage.removeItem('user_has_signed_in');
   localStorage.removeItem('user_email');
-  gapi.client.setToken(null);
+  if (typeof gapi !== 'undefined' && gapi.client) {
+    gapi.client.setToken(null);
+  }
   showLoggedOutView();
 }
 
@@ -138,11 +150,14 @@ async function loadExpenses() {
     return;
   }
 
-  if (navigator.onLine) {
+  if (navigator.onLine && isGapiReady) {
     try {
       const result = await getExpenses(spreadsheetId, sheetName, 5, 0);
       allExpenses = result.expenses;
       totalExpenses = result.totalExpenses;
+      // Cache expenses and total count in localStorage
+      localStorage.setItem('cached-expenses', JSON.stringify(allExpenses));
+      localStorage.setItem('cached-total-expenses', totalExpenses.toString());
     } catch (error: unknown) {
       if (error instanceof Object && 'status' in error && error.status === 401) {
         handleSignOutClick();
@@ -172,6 +187,7 @@ async function handleFetchMoreClick() {
     const result = await getExpenses(spreadsheetId!, sheetName!, 5, offset);
     // Prepend older expenses to the list
     allExpenses.push(...result.expenses);
+    localStorage.setItem('cached-expenses', JSON.stringify(allExpenses));
     renderExpenses();
   } catch (error) {
     console.error('Error fetching more expenses:', error);
@@ -286,7 +302,42 @@ function getAnchorElementById(id: string): HTMLAnchorElement {
   return element;
 }
 
-export function main() {
+function loadCachedExpenses() {
+  try {
+    const cached = localStorage.getItem('cached-expenses');
+    const cachedTotal = localStorage.getItem('cached-total-expenses');
+    if (cached) {
+      allExpenses = JSON.parse(cached);
+    }
+    if (cachedTotal) {
+      totalExpenses = parseInt(cachedTotal, 10);
+    }
+  } catch (err) {
+    console.error('Error loading cached expenses:', err);
+  }
+}
+
+async function setupGoogleApis(hasValidToken: boolean, token: TokenWithExpiration | null) {
+  const customWindow = window as unknown as CustomWindow;
+  const gapiPromise = customWindow.gapiLoadPromise || Promise.resolve();
+  const gisPromise = customWindow.gisLoadPromise || Promise.resolve();
+
+  await Promise.all([gapiPromise, gisPromise]);
+
+  initGapiClient(async () => {
+    isGapiReady = true;
+    const userEmail = localStorage.getItem('user_email') || undefined;
+    initGoogleAuth(handleAuthResponse, userEmail);
+
+    if (hasValidToken && token) {
+      setGapiToken(token);
+      await syncPendingExpenses();
+      await loadExpenses();
+    }
+  });
+}
+
+export async function main() {
   loggedInView = document.getElementById('logged-in-view');
   loggedOutView = document.getElementById('logged-out-view');
   signInButton = getButtonElementById('sign-in-button');
@@ -316,43 +367,46 @@ export function main() {
   const expenseForm = document.getElementById('expense-form');
   if (expenseForm) expenseForm.addEventListener('submit', handleAddExpense);
 
-  initGapiClient(async () => {
-    const userEmail = localStorage.getItem('user_email') || undefined;
-    initGoogleAuth(handleAuthResponse, userEmail);
+  loadCachedExpenses();
+  renderExpenses();
 
-    // Check for query parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const querySpreadsheetId = urlParams.get('spreadsheetId');
-    const querySheetName = urlParams.get('sheetName');
+  const tokenString = localStorage.getItem('gapi_token');
+  let hasValidToken = false;
+  let token: TokenWithExpiration | null = null;
 
-    if (querySpreadsheetId && querySheetName) {
-      showSpreadsheetSelection(querySpreadsheetId, querySheetName);
-      return; // Wait for user to save
+  if (tokenString) {
+    token = JSON.parse(tokenString);
+    if (token && new Date().getTime() < token.expirationTime) {
+      hasValidToken = true;
     }
+  }
 
-    const tokenString = localStorage.getItem('gapi_token');
-    if (tokenString) {
-      const token = JSON.parse(tokenString);
-      if (new Date().getTime() < token.expirationTime) {
-        // We have a valid token, so we are logged in.
-        setGapiToken(token);
-        const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
-        const sheetName = localStorage.getItem('selected_sheet_name');
-        if (spreadsheetId && sheetName) {
-          showLoggedInView();
-          await loadExpenses();
-        } else {
-          showSpreadsheetSelection();
-        }
-      } else {
-        // Token expired, show the logged-out view.
-        showLoggedOutView();
-      }
+  // Check for query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const querySpreadsheetId = urlParams.get('spreadsheetId');
+  const querySheetName = urlParams.get('sheetName');
+
+  if (querySpreadsheetId && querySheetName) {
+    showSpreadsheetSelection(querySpreadsheetId, querySheetName);
+  } else if (hasValidToken) {
+    const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+    const sheetName = localStorage.getItem('selected_sheet_name');
+    if (spreadsheetId && sheetName) {
+      showLoggedInView();
     } else {
-      // No token, show the logged-out view.
-      showLoggedOutView();
+      showSpreadsheetSelection();
     }
-  });
+  } else {
+    showLoggedOutView();
+  }
+
+  if (navigator.onLine) {
+    try {
+      await setupGoogleApis(hasValidToken, token);
+    } catch (err) {
+      console.error('Failed to setup Google APIs:', err);
+    }
+  }
 }
 
 async function handleAddExpense(event: SubmitEvent) {
@@ -385,13 +439,21 @@ async function handleAddExpense(event: SubmitEvent) {
     return;
   }
 
-  if (navigator.onLine) {
-    await addExpense(spreadsheetId, sheetName, date, name, category, price);
+  if (navigator.onLine && isGapiReady) {
+    try {
+      await addExpense(spreadsheetId, sheetName, date, name, category, price);
 
-    // Manually update local state instead of reloading
-    allExpenses.unshift(expense);
-    totalExpenses++;
-    renderExpenses();
+      // Manually update local state instead of reloading
+      allExpenses.unshift(expense);
+      totalExpenses++;
+      localStorage.setItem('cached-expenses', JSON.stringify(allExpenses));
+      localStorage.setItem('cached-total-expenses', totalExpenses.toString());
+      renderExpenses();
+    } catch (err) {
+      console.error('Failed to add expense online, queueing locally:', err);
+      savePendingExpense(expense);
+      renderExpenses();
+    }
   } else {
     savePendingExpense(expense);
     renderExpenses(); // Re-render to show the pending expense
@@ -418,6 +480,10 @@ export function savePendingExpense(expense: Expense) {
 }
 
 export async function syncPendingExpenses() {
+  if (!isGapiReady) {
+    console.log('GAPI client not ready yet. Postponing sync.');
+    return;
+  }
   const pendingExpenses = getPendingExpenses();
   const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
   const sheetName = localStorage.getItem('selected_sheet_name');
