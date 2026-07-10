@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/bryclee/hello-expense-tracker#readme",
   "devDependencies": {
+    "@playwright/test": "1.61.0",
     "@types/gapi": "^0.0.47",
     "@types/gapi.client.sheets-v4": "^0.0.4",
     "@types/google.accounts": "^0.0.18",

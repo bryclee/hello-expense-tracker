@@ -53,7 +53,7 @@
 
 -   [x] Set up a testing environment (Vitest for unit tests).
 -   [ ] Write unit tests for `auth.js`, `gapi.js`, and `app.js`.
--   [ ] Write integration tests for the main application flows (login, expense creation, offline mode).
+-   [x] Write integration tests for the main application flows (login, expense creation, offline mode).
 
 ## 9. Future Enhancements
 
