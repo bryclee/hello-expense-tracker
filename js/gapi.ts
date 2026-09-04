@@ -51,11 +51,12 @@ export async function getExpenses(spreadsheetId: string, sheetName: string, limi
   const rows = response.result.values || [];
   rows.reverse();
 
-  const expenses: Expense[] = rows.map(row => ({
+  const expenses: Expense[] = rows.map((row, index) => ({
     date: row[0],
     name: row[1],
     category: row[2],
     price: row[3],
+    rowIndex: endRow - index,
   }));
 
   return { expenses: expenses, totalExpenses: totalExpenses };
@@ -79,6 +80,43 @@ export async function addExpense(spreadsheetId: string, sheetName: string, date:
 export async function getSpreadsheetDetails(spreadsheetId: string) {
   const response = await gapi.client.sheets.spreadsheets.get({
     spreadsheetId: spreadsheetId,
+  });
+  return response.result;
+}
+
+export async function deleteExpense(
+  spreadsheetId: string,
+  sheetIdOrName: number | string,
+  rowIndex: number
+) {
+  let sheetId: number;
+  if (typeof sheetIdOrName === 'number') {
+    sheetId = sheetIdOrName;
+  } else {
+    const details = await getSpreadsheetDetails(spreadsheetId);
+    const sheet = details.sheets?.find(
+      (s: { properties?: { title?: string; sheetId?: number } }) =>
+        s.properties?.title === sheetIdOrName
+    );
+    sheetId = sheet?.properties?.sheetId ?? 0;
+  }
+
+  const response = await gapi.client.sheets.spreadsheets.batchUpdate({
+    spreadsheetId: spreadsheetId,
+    resource: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: rowIndex - 1,
+              endIndex: rowIndex,
+            },
+          },
+        },
+      ],
+    },
   });
   return response.result;
 }

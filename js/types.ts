@@ -3,4 +3,5 @@ export interface Expense {
   name: string;
   category: string;
   price: string;
+  rowIndex?: number;
 }

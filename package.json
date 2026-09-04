@@ -6,6 +6,7 @@
   "scripts": {
     "server": "python3 -m http.server 8000",
     "test": "vitest",
+    "test:integration": "playwright test",
     "build": "tsc",
     "watch": "tsc --watch",
     "lint": "eslint ."
