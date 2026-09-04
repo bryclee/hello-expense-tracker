@@ -3,6 +3,9 @@ const tsParser = require('@typescript-eslint/parser');
 
 module.exports = [
   {
+    ignores: ['dist/**', 'node_modules/**', 'assets/**'],
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
@@ -17,6 +20,12 @@ module.exports = [
     rules: {
       ...tseslint.configs['eslint-recommended'].rules,
       ...tseslint.configs['recommended'].rules,
+    },
+  },
+  {
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];

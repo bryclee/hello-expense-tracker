@@ -52,7 +52,7 @@
 ## 8. Testing
 
 -   [x] Set up a testing environment (Vitest for unit tests).
--   [ ] Write unit tests for `auth.js`, `gapi.js`, and `app.js`.
+-   [x] Write unit tests for `auth.js`, `gapi.js`, and `app.js`.
 -   [x] Write integration tests for the main application flows (login, expense creation, offline mode).
 
 ## 9. Future Enhancements
@@ -64,3 +64,18 @@
 -   [x] Optimize loading expenses to only load necessary rows.
 
     The application now loads expenses in batches (e.g., 5 at a time) instead of fetching the entire sheet at once. This is achieved by calculating the required range of rows based on an offset and limit, making the application much more efficient for large spreadsheets.
+
+## 10. UI/UX Modernization & Mobile Optimization
+
+-   [ ] Design a responsive, mobile-first interface layout.
+-   [ ] Streamline main expense tracking operations (quick input form, touch-friendly controls, clear visual hierarchy).
+-   [ ] Apply modern visual styling (clean typography, unified design system/tokens, card containers, dark/light theme support).
+-   [ ] Enhance transaction list display with clear sync badges (e.g. Synced / Pending).
+
+## 11. PWA Installation & Offline Syncing
+
+-   [ ] Investigate and improve authentication persistence for offline/re-authentication flows.
+-   [ ] Add Web App Manifest (`manifest.json` / icons) for PWA installation on mobile and desktop.
+-   [ ] Re-architect and re-enable Service Worker caching compatible with build and environment paths.
+-   [ ] Implement sync management (status feedback, manual sync retry button, robust queue handling).
+
