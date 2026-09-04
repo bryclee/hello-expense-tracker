@@ -31,11 +31,14 @@ let sheetNameInput: HTMLInputElement;
 let shareableLinkInput: HTMLInputElement;
 let copyLinkButton: HTMLButtonElement;
 let fetchMoreButton: HTMLButtonElement;
+let editEntriesButton: HTMLButtonElement;
+let cancelEditButton: HTMLButtonElement;
 
 let allExpenses: Expense[] = [];
 let totalExpenses = 0;
 let isLoadingMore = false;
 let isGapiReady = false;
+let isEditMode = false;
 
 function updateOnlineStatus() {
   if (navigator.onLine) {
@@ -254,6 +257,30 @@ function createDeleteButton(
   return btn;
 }
 
+function updateEditControls() {
+  if (!editEntriesButton || !cancelEditButton) return;
+  const pendingExpenses = getPendingExpenses();
+  const hasExpenses = allExpenses.length > 0 || pendingExpenses.length > 0;
+
+  if (isEditMode) {
+    editEntriesButton.style.display = 'none';
+    cancelEditButton.style.display = 'inline-block';
+  } else {
+    cancelEditButton.style.display = 'none';
+    editEntriesButton.style.display = hasExpenses ? 'inline-block' : 'none';
+  }
+}
+
+export function setEditMode(enabled: boolean) {
+  isEditMode = enabled;
+  updateEditControls();
+  renderExpenses();
+}
+
+export function getIsEditMode(): boolean {
+  return isEditMode;
+}
+
 function renderExpenses() {
   const transactionList = document.getElementById('transaction-list');
   if (transactionList) transactionList.innerHTML = ''; // Clear the list
@@ -265,11 +292,13 @@ function renderExpenses() {
   pendingExpenses.forEach((expense: Expense, index: number) => {
     const li = document.createElement('li');
     li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
-    const deleteBtn = createDeleteButton(() => {
-      deletePendingExpense(index);
-      renderExpenses();
-    }, `Delete ${expense.name}`);
-    li.appendChild(deleteBtn);
+    if (isEditMode) {
+      const deleteBtn = createDeleteButton(() => {
+        deletePendingExpense(index);
+        renderExpenses();
+      }, `Delete ${expense.name}`);
+      li.appendChild(deleteBtn);
+    }
     if (transactionList) transactionList.appendChild(li);
   });
 
@@ -277,12 +306,14 @@ function renderExpenses() {
     combinedExpenses.forEach((expense, index) => {
       const li = document.createElement('li');
       li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price}`;
-      const deleteBtn = createDeleteButton(async () => {
-        deleteBtn.disabled = true;
-        const rowIndex = expense.rowIndex ?? (totalExpenses - index + 1);
-        await handleDeleteExpense({ ...expense, rowIndex });
-      }, `Delete ${expense.name}`);
-      li.appendChild(deleteBtn);
+      if (isEditMode) {
+        const deleteBtn = createDeleteButton(async () => {
+          deleteBtn.disabled = true;
+          const rowIndex = expense.rowIndex ?? (totalExpenses - index + 1);
+          await handleDeleteExpense({ ...expense, rowIndex });
+        }, `Delete ${expense.name}`);
+        li.appendChild(deleteBtn);
+      }
       if (transactionList) transactionList.appendChild(li);
     });
   } else if (pendingExpenses.length === 0) {
@@ -292,11 +323,15 @@ function renderExpenses() {
   }
 
   // Show or hide the "Show More" button
-  if (allExpenses.length >= totalExpenses) {
-    fetchMoreButton.style.display = 'none';
-  } else {
-    fetchMoreButton.style.display = 'block';
+  if (fetchMoreButton) {
+    if (allExpenses.length >= totalExpenses) {
+      fetchMoreButton.style.display = 'none';
+    } else {
+      fetchMoreButton.style.display = 'block';
+    }
   }
+
+  updateEditControls();
 }
 
 function getButtonElementById(id: string): HTMLButtonElement {
@@ -380,6 +415,8 @@ export async function main() {
   shareableLinkInput = getInputElementById('shareable-link');
   copyLinkButton = getButtonElementById('copy-link-button');
   fetchMoreButton = getButtonElementById('fetch-more-button');
+  editEntriesButton = getButtonElementById('edit-entries-button');
+  cancelEditButton = getButtonElementById('cancel-edit-button');
 
   console.log('main() called');
   window.addEventListener('online', updateOnlineStatus);
@@ -392,6 +429,12 @@ export async function main() {
   switchButton.addEventListener('click', handleSwitchClick);
   saveSpreadsheetButton.addEventListener('click', handleSaveSpreadsheetClick);
   fetchMoreButton.addEventListener('click', handleFetchMoreClick);
+  editEntriesButton.addEventListener('click', () => {
+    setEditMode(true);
+  });
+  cancelEditButton.addEventListener('click', () => {
+    setEditMode(false);
+  });
 
   const expenseForm = document.getElementById('expense-form');
   if (expenseForm) expenseForm.addEventListener('submit', handleAddExpense);

@@ -6,6 +6,8 @@ import {
   formatDate,
   getTodayLocalDate,
   deletePendingExpense,
+  setEditMode,
+  getIsEditMode,
 } from '../js/app';
 
 describe('app.ts unit tests', () => {
@@ -134,6 +136,17 @@ describe('app.ts unit tests', () => {
       deletePendingExpense(-1);
 
       expect(getPendingExpenses()).toEqual([exp1]);
+    });
+  });
+
+  describe('edit mode', () => {
+    it('should set and get edit mode state', () => {
+      setEditMode(false);
+      expect(getIsEditMode()).toBe(false);
+      setEditMode(true);
+      expect(getIsEditMode()).toBe(true);
+      setEditMode(false);
+      expect(getIsEditMode()).toBe(false);
     });
   });
 });

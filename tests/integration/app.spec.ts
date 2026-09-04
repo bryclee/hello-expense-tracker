@@ -382,6 +382,13 @@ test.describe('Expense Tracker Integration Tests', () => {
     await expect(listItems).toHaveCount(1);
     await expect(listItems.first()).toContainText('Train Ticket');
 
+    // Delete icons should not be visible before clicking Edit entries
+    await expect(page.locator('.delete-btn')).toHaveCount(0);
+
+    // Click Edit entries to show delete buttons
+    await page.click('#edit-entries-button');
+    await expect(page.locator('.delete-btn')).toHaveCount(1);
+
     // Click delete button on the pending expense
     await listItems.first().locator('.delete-btn').click();
 
@@ -464,6 +471,9 @@ test.describe('Expense Tracker Integration Tests', () => {
     await expect(listItems).toHaveCount(1);
     await expect(listItems.first()).toContainText('Coffee');
 
+    // Click Edit entries to show delete buttons
+    await page.click('#edit-entries-button');
+
     // Click delete
     await listItems.first().locator('.delete-btn').click();
 
@@ -482,5 +492,80 @@ test.describe('Expense Tracker Integration Tests', () => {
 
     // Verify UI updated to no expenses found
     await expect(page.locator('#transaction-list li')).toHaveText('No expenses found.');
+  });
+
+  test('should toggle edit mode to show and hide delete icons', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('selected_spreadsheet_id', 'mock-sheet-id');
+      window.localStorage.setItem('selected_sheet_name', 'Expenses');
+      window.localStorage.setItem(
+        'gapi_token',
+        JSON.stringify({
+          access_token: 'mock-token-123',
+          expires_in: 3600,
+          expirationTime: Date.now() + 3600000,
+        })
+      );
+      window.localStorage.setItem(
+        'pending-expenses',
+        JSON.stringify([
+          { date: '2025-10-17', name: 'Train Ticket', category: 'Transportation', price: '12.00' },
+        ])
+      );
+
+      (window as any).google = {
+        accounts: {
+          oauth2: {
+            initTokenClient: () => ({ requestAccessToken: () => {} }),
+          },
+        },
+      };
+
+      (window as any).gapi = {
+        load: (lib: string, cb: () => void) => cb(),
+        client: {
+          init: () => Promise.resolve(),
+          setToken: () => {},
+          sheets: {
+            spreadsheets: {
+              get: async () => ({
+                result: { properties: { title: 'Mock Spreadsheet Title' } },
+              }),
+              values: {
+                get: async () => ({ result: { values: [] } }),
+              },
+            },
+          },
+        },
+      };
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#logged-in-view')).toBeVisible();
+
+    const editBtn = page.locator('#edit-entries-button');
+    const cancelBtn = page.locator('#cancel-edit-button');
+    const deleteIcons = page.locator('#transaction-list .delete-btn');
+
+    // Initially: Edit button is visible, Cancel button is hidden, Delete icons are hidden
+    await expect(editBtn).toBeVisible();
+    await expect(cancelBtn).not.toBeVisible();
+    await expect(deleteIcons).toHaveCount(0);
+
+    // Click Edit entries
+    await editBtn.click();
+
+    // Now: Edit button is hidden, Cancel button is visible, Delete icons are shown
+    await expect(editBtn).not.toBeVisible();
+    await expect(cancelBtn).toBeVisible();
+    await expect(deleteIcons).toHaveCount(1);
+
+    // Click Cancel edit
+    await cancelBtn.click();
+
+    // Now: Delete icons are hidden again, Edit button is restored
+    await expect(deleteIcons).toHaveCount(0);
+    await expect(editBtn).toBeVisible();
+    await expect(cancelBtn).not.toBeVisible();
   });
 });
