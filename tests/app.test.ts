@@ -5,6 +5,7 @@ import {
   syncPendingExpenses,
   formatDate,
   getTodayLocalDate,
+  deletePendingExpense,
 } from '../js/app';
 
 describe('app.ts unit tests', () => {
@@ -110,6 +111,29 @@ describe('app.ts unit tests', () => {
       );
       // Pending expenses should remain untouched
       expect(getPendingExpenses().length).toBe(1);
+    });
+  });
+
+  describe('deletePendingExpense', () => {
+    it('should delete pending expense at given index', () => {
+      const exp1 = { date: '2025-10-14', name: 'Item 1', category: 'Food', price: '10' };
+      const exp2 = { date: '2025-10-15', name: 'Item 2', category: 'Transport', price: '20' };
+      savePendingExpense(exp1);
+      savePendingExpense(exp2);
+
+      deletePendingExpense(0);
+
+      expect(getPendingExpenses()).toEqual([exp2]);
+    });
+
+    it('should do nothing if index is out of bounds', () => {
+      const exp1 = { date: '2025-10-14', name: 'Item 1', category: 'Food', price: '10' };
+      savePendingExpense(exp1);
+
+      deletePendingExpense(5);
+      deletePendingExpense(-1);
+
+      expect(getPendingExpenses()).toEqual([exp1]);
     });
   });
 });

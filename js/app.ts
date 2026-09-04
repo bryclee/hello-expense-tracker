@@ -5,6 +5,7 @@ import {
   getExpenses,
   addExpense,
   getSpreadsheetDetails,
+  deleteExpense,
 } from './gapi.js';
 import { Expense } from './types.js';
 
@@ -236,6 +237,23 @@ async function loadSpreadsheetDetails() {
   };
 }
 
+function createDeleteButton(
+  onClick: () => Promise<void> | void,
+  ariaLabel: string
+): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.className = 'delete-btn';
+  btn.setAttribute('aria-label', ariaLabel);
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+  btn.style.marginLeft = '8px';
+  btn.style.cursor = 'pointer';
+  btn.onclick = async (e) => {
+    e.preventDefault();
+    await onClick();
+  };
+  return btn;
+}
+
 function renderExpenses() {
   const transactionList = document.getElementById('transaction-list');
   if (transactionList) transactionList.innerHTML = ''; // Clear the list
@@ -244,16 +262,27 @@ function renderExpenses() {
   const combinedExpenses: Expense[] = [...allExpenses];
 
   // Visually distinguish pending expenses
-  pendingExpenses.forEach((expense: Expense) => {
+  pendingExpenses.forEach((expense: Expense, index: number) => {
     const li = document.createElement('li');
     li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
+    const deleteBtn = createDeleteButton(() => {
+      deletePendingExpense(index);
+      renderExpenses();
+    }, `Delete ${expense.name}`);
+    li.appendChild(deleteBtn);
     if (transactionList) transactionList.appendChild(li);
   });
 
   if (combinedExpenses.length > 0) {
-    combinedExpenses.forEach((expense) => {
+    combinedExpenses.forEach((expense, index) => {
       const li = document.createElement('li');
       li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price}`;
+      const deleteBtn = createDeleteButton(async () => {
+        deleteBtn.disabled = true;
+        const rowIndex = expense.rowIndex ?? (totalExpenses - index + 1);
+        await handleDeleteExpense({ ...expense, rowIndex });
+      }, `Delete ${expense.name}`);
+      li.appendChild(deleteBtn);
       if (transactionList) transactionList.appendChild(li);
     });
   } else if (pendingExpenses.length === 0) {
@@ -527,4 +556,34 @@ export function formatDate(dateStr: string): string {
     return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
   }
   return dateStr;
+}
+
+export function deletePendingExpense(index: number) {
+  const pendingExpenses = getPendingExpenses();
+  if (index >= 0 && index < pendingExpenses.length) {
+    pendingExpenses.splice(index, 1);
+    localStorage.setItem('pending-expenses', JSON.stringify(pendingExpenses));
+  }
+}
+
+export async function handleDeleteExpense(expense: Expense) {
+  const spreadsheetId = localStorage.getItem('selected_spreadsheet_id');
+  const sheetName = localStorage.getItem('selected_sheet_name');
+
+  if (!spreadsheetId || !sheetName || expense.rowIndex === undefined) {
+    return;
+  }
+
+  if (!navigator.onLine || !isGapiReady) {
+    alert('Cannot delete synced expenses while offline.');
+    return;
+  }
+
+  try {
+    await deleteExpense(spreadsheetId, sheetName, expense.rowIndex);
+    await loadExpenses();
+  } catch (error) {
+    console.error('Error deleting expense:', error);
+    alert('Failed to delete expense. Please try again.');
+  }
 }

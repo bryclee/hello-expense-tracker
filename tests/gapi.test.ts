@@ -5,6 +5,7 @@ import {
   getExpenses,
   addExpense,
   getSpreadsheetDetails,
+  deleteExpense,
 } from '../js/gapi';
 
 describe('gapi.ts unit tests', () => {
@@ -129,8 +130,8 @@ describe('gapi.ts unit tests', () => {
 
       expect(res.totalExpenses).toBe(3);
       expect(res.expenses).toEqual([
-        { date: '2025-01-02', name: 'Bus', category: 'Transport', price: '3' },
-        { date: '2025-01-01', name: 'Coffee', category: 'Food', price: '5' },
+        { date: '2025-01-02', name: 'Bus', category: 'Transport', price: '3', rowIndex: 4 },
+        { date: '2025-01-01', name: 'Coffee', category: 'Food', price: '5', rowIndex: 3 },
       ]);
     });
 
@@ -216,6 +217,91 @@ describe('gapi.ts unit tests', () => {
 
       expect(mockGet).toHaveBeenCalledWith({ spreadsheetId: 'sheet123' });
       expect(res).toEqual({ properties: { title: 'My Budget Sheet' } });
+    });
+  });
+
+  describe('deleteExpense', () => {
+    it('should call batchUpdate with deleteDimension using numeric sheetId', async () => {
+      const mockBatchUpdate = vi.fn().mockResolvedValue({
+        result: { replies: [{}] },
+      });
+
+      (global as any).gapi = {
+        client: {
+          sheets: {
+            spreadsheets: {
+              batchUpdate: mockBatchUpdate,
+            },
+          },
+        },
+      };
+
+      const res = await deleteExpense('sheet123', 0, 3);
+
+      expect(mockBatchUpdate).toHaveBeenCalledWith({
+        spreadsheetId: 'sheet123',
+        resource: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId: 0,
+                  dimension: 'ROWS',
+                  startIndex: 2,
+                  endIndex: 3,
+                },
+              },
+            },
+          ],
+        },
+      });
+      expect(res).toEqual({ replies: [{}] });
+    });
+
+    it('should look up sheetId by title if sheetName string is provided', async () => {
+      const mockGet = vi.fn().mockResolvedValue({
+        result: {
+          sheets: [
+            { properties: { sheetId: 101, title: 'Expenses' } },
+            { properties: { sheetId: 102, title: 'Other' } },
+          ],
+        },
+      });
+      const mockBatchUpdate = vi.fn().mockResolvedValue({
+        result: { replies: [{}] },
+      });
+
+      (global as any).gapi = {
+        client: {
+          sheets: {
+            spreadsheets: {
+              get: mockGet,
+              batchUpdate: mockBatchUpdate,
+            },
+          },
+        },
+      };
+
+      await deleteExpense('sheet123', 'Expenses', 5);
+
+      expect(mockGet).toHaveBeenCalledWith({ spreadsheetId: 'sheet123' });
+      expect(mockBatchUpdate).toHaveBeenCalledWith({
+        spreadsheetId: 'sheet123',
+        resource: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId: 101,
+                  dimension: 'ROWS',
+                  startIndex: 4,
+                  endIndex: 5,
+                },
+              },
+            },
+          ],
+        },
+      });
     });
   });
 });

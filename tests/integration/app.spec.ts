@@ -328,4 +328,159 @@ test.describe('Expense Tracker Integration Tests', () => {
     expect(isCalled).toBe(true);
     expect(values).toEqual(['10/17/2025', 'Train Ticket', 'Transportation', '12.00']);
   });
+
+  test('should delete an offline/pending expense', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('selected_spreadsheet_id', 'mock-sheet-id');
+      window.localStorage.setItem('selected_sheet_name', 'Expenses');
+      window.localStorage.setItem(
+        'gapi_token',
+        JSON.stringify({
+          access_token: 'mock-token-123',
+          expires_in: 3600,
+          expirationTime: Date.now() + 3600000,
+        })
+      );
+      window.localStorage.setItem(
+        'pending-expenses',
+        JSON.stringify([
+          { date: '2025-10-17', name: 'Train Ticket', category: 'Transportation', price: '12.00' },
+        ])
+      );
+
+      (window as any).google = {
+        accounts: {
+          oauth2: {
+            initTokenClient: () => ({ requestAccessToken: () => {} }),
+          },
+        },
+      };
+
+      (window as any).gapi = {
+        load: (lib: string, cb: () => void) => cb(),
+        client: {
+          init: () => Promise.resolve(),
+          setToken: () => {},
+          sheets: {
+            spreadsheets: {
+              get: async () => ({
+                result: { properties: { title: 'Mock Spreadsheet Title' } },
+              }),
+              values: {
+                get: async () => ({ result: { values: [] } }),
+              },
+            },
+          },
+        },
+      };
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#logged-in-view')).toBeVisible();
+
+    const listItems = page.locator('#transaction-list li');
+    await expect(listItems).toHaveCount(1);
+    await expect(listItems.first()).toContainText('Train Ticket');
+
+    // Click delete button on the pending expense
+    await listItems.first().locator('.delete-btn').click();
+
+    // Verify localStorage pending-expenses is empty
+    const pendingExpenses = await page.evaluate(() =>
+      window.localStorage.getItem('pending-expenses')
+    );
+    expect(JSON.parse(pendingExpenses || '[]')).toEqual([]);
+
+    // Verify UI updated
+    await expect(page.locator('#transaction-list li')).toHaveText('No expenses found.');
+  });
+
+  test('should delete a synced expense via Google Sheets API', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('selected_spreadsheet_id', 'mock-sheet-id');
+      window.localStorage.setItem('selected_sheet_name', 'Expenses');
+      window.localStorage.setItem(
+        'gapi_token',
+        JSON.stringify({
+          access_token: 'mock-token-123',
+          expires_in: 3600,
+          expirationTime: Date.now() + 3600000,
+        })
+      );
+
+      const mockDatabase = [
+        ['2025-10-15', 'Coffee', 'Food', '4.50'],
+      ];
+
+      (window as any).google = {
+        accounts: {
+          oauth2: {
+            initTokenClient: () => ({ requestAccessToken: () => {} }),
+          },
+        },
+      };
+
+      (window as any).gapi = {
+        load: (lib: string, cb: () => void) => cb(),
+        client: {
+          init: () => Promise.resolve(),
+          setToken: () => {},
+          sheets: {
+            spreadsheets: {
+              get: async () => ({
+                result: {
+                  properties: { title: 'Mock Spreadsheet Title' },
+                  sheets: [{ properties: { sheetId: 0, title: 'Expenses' } }],
+                },
+              }),
+              values: {
+                get: async ({ range }: { range: string }) => {
+                  if (range.endsWith('!A:A')) {
+                    return {
+                      result: { values: [['Date'], ...mockDatabase.map((r) => [r[0]])] },
+                    };
+                  }
+                  return {
+                    result: { values: mockDatabase },
+                  };
+                },
+              },
+              batchUpdate: async (req: any) => {
+                (window as any).batchUpdateCalled = true;
+                (window as any).batchUpdateReq = req;
+                mockDatabase.pop();
+                return { result: { replies: [{}] } };
+              },
+            },
+          },
+        },
+      };
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#logged-in-view')).toBeVisible();
+
+    const listItems = page.locator('#transaction-list li');
+    await expect(listItems).toHaveCount(1);
+    await expect(listItems.first()).toContainText('Coffee');
+
+    // Click delete
+    await listItems.first().locator('.delete-btn').click();
+
+    // Verify batchUpdate called with deleteDimension
+    const isCalled = await page.evaluate(() => (window as any).batchUpdateCalled);
+    const req = await page.evaluate(() => (window as any).batchUpdateReq);
+    expect(isCalled).toBe(true);
+    expect(req.resource.requests[0].deleteDimension).toEqual({
+      range: {
+        sheetId: 0,
+        dimension: 'ROWS',
+        startIndex: 1,
+        endIndex: 2,
+      },
+    });
+
+    // Verify UI updated to no expenses found
+    await expect(page.locator('#transaction-list li')).toHaveText('No expenses found.');
+  });
 });
