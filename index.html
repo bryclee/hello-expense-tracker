@@ -60,9 +60,6 @@
     >
       <span id="spreadsheet-title"></span>
     </div>
-    <button id="switch-button" style="display: none">
-      Spreadsheet Details
-    </button>
 
     <div id="spreadsheet-selection" style="display: none">
       <h3>Select Spreadsheet</h3>
@@ -102,7 +99,12 @@
 
     <!-- LOGGED-IN VIEW -->
     <div id="logged-in-view">
-      <button id="sign-out-button">Sign Out</button>
+      <div style="margin-bottom: 1em">
+        <button id="switch-button" style="display: none; margin-right: 8px">
+          Spreadsheet Details
+        </button>
+        <button id="sign-out-button">Sign Out</button>
+      </div>
 
       <hr />
 
@@ -157,9 +159,11 @@
       <ul id="transaction-list">
         <!-- Transactions will be rendered here by JavaScript -->
       </ul>
-      <button id="fetch-more-button">Show More</button>
-      <button id="edit-entries-button" style="margin-left: 8px">Edit entries</button>
-      <button id="cancel-edit-button" style="margin-left: 8px; display: none">Cancel edit</button>
+      <div id="transaction-actions" style="margin-top: 1em">
+        <button id="fetch-more-button" style="margin-right: 8px">Show More</button>
+        <button id="edit-entries-button">Edit entries</button>
+        <button id="cancel-edit-button" style="display: none">Cancel edit</button>
+      </div>
     </div>
 
     <!-- Google Client Libraries -->

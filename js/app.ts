@@ -57,7 +57,8 @@ function showLoggedInView() {
   if (loggedInView) loggedInView.style.display = 'block';
   if (loggedOutView) loggedOutView.style.display = 'none';
   if (spreadsheetSelection) spreadsheetSelection.style.display = 'none';
-  if (switchButton) switchButton.style.display = 'block';
+  if (switchButton) switchButton.style.display = 'inline-block';
+  isEditMode = false;
   getInputElementById('expense-date').value = getTodayLocalDate();
   loadSpreadsheetDetails();
 }
@@ -327,7 +328,7 @@ function renderExpenses() {
     if (allExpenses.length >= totalExpenses) {
       fetchMoreButton.style.display = 'none';
     } else {
-      fetchMoreButton.style.display = 'block';
+      fetchMoreButton.style.display = 'inline-block';
     }
   }
 
