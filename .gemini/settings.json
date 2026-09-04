@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "command(npm run build)",
+      "command(npm run test:integration)",
+      "command(npm test)"
+    ]
+  }
+}
