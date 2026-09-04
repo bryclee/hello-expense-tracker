@@ -54,7 +54,7 @@ function showLoggedInView() {
   if (loggedOutView) loggedOutView.style.display = 'none';
   if (spreadsheetSelection) spreadsheetSelection.style.display = 'none';
   if (switchButton) switchButton.style.display = 'block';
-  getInputElementById('expense-date').valueAsDate = new Date();
+  getInputElementById('expense-date').value = getTodayLocalDate();
   loadSpreadsheetDetails();
 }
 
@@ -246,14 +246,14 @@ function renderExpenses() {
   // Visually distinguish pending expenses
   pendingExpenses.forEach((expense: Expense) => {
     const li = document.createElement('li');
-    li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
+    li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price} (Not Synced)`;
     if (transactionList) transactionList.appendChild(li);
   });
 
   if (combinedExpenses.length > 0) {
     combinedExpenses.forEach((expense) => {
       const li = document.createElement('li');
-      li.textContent = `${expense.date} - ${expense.name} - ${expense.category} - ${expense.price}`;
+      li.textContent = `${formatDate(expense.date)} - ${expense.name} - ${expense.category} - ${expense.price}`;
       if (transactionList) transactionList.appendChild(li);
     });
   } else if (pendingExpenses.length === 0) {
@@ -423,7 +423,7 @@ async function handleAddExpense(event: SubmitEvent) {
   addButton.textContent = 'Saving...';
   addButton.disabled = true;
 
-  const date = getInputElementById('expense-date').value;
+  const date = formatDate(getInputElementById('expense-date').value);
   const name = getInputElementById('expense-name').value;
   const category = getSelectElementById('expense-category').value;
   const price = getInputElementById('expense-price').value;
@@ -460,7 +460,7 @@ async function handleAddExpense(event: SubmitEvent) {
   }
 
   // Clear the form
-  getInputElementById('expense-date').valueAsDate = new Date();
+  getInputElementById('expense-date').value = getTodayLocalDate();
   getInputElementById('expense-name').value = '';
   getSelectElementById('expense-category').value = '';
   getInputElementById('expense-price').value = '';
@@ -507,4 +507,24 @@ export async function syncPendingExpenses() {
     localStorage.removeItem('pending-expenses');
     await loadExpenses();
   }
+}
+
+export function getTodayLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const month = m < 10 ? `0${m}` : `${m}`;
+  const day = d < 10 ? `0${d}` : `${d}`;
+  return `${year}-${month}-${day}`;
+}
+
+export function formatDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
+  }
+  return dateStr;
 }

@@ -1,10 +1,48 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getPendingExpenses, savePendingExpense, syncPendingExpenses } from '../js/app';
+import {
+  getPendingExpenses,
+  savePendingExpense,
+  syncPendingExpenses,
+  formatDate,
+  getTodayLocalDate,
+} from '../js/app';
 
 describe('app.ts unit tests', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
+  });
+
+  describe('formatDate', () => {
+    it('should convert YYYY-MM-DD to M/D/YYYY', () => {
+      expect(formatDate('2026-09-04')).toBe('9/4/2026');
+      expect(formatDate('2026-09-03')).toBe('9/3/2026');
+      expect(formatDate('2025-10-15')).toBe('10/15/2025');
+      expect(formatDate('2025-01-05')).toBe('1/5/2025');
+    });
+
+    it('should preserve existing M/D/YYYY format', () => {
+      expect(formatDate('9/3/2026')).toBe('9/3/2026');
+      expect(formatDate('10/15/2025')).toBe('10/15/2025');
+    });
+
+    it('should return empty string for empty input', () => {
+      expect(formatDate('')).toBe('');
+    });
+  });
+
+  describe('getTodayLocalDate', () => {
+    it('should return a date string in YYYY-MM-DD format using local time', () => {
+      const result = getTodayLocalDate();
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const now = new Date();
+      const expectedYear = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const d = now.getDate();
+      const expectedMonth = m < 10 ? `0${m}` : `${m}`;
+      const expectedDay = d < 10 ? `0${d}` : `${d}`;
+      expect(result).toBe(`${expectedYear}-${expectedMonth}-${expectedDay}`);
+    });
   });
 
   describe('getPendingExpenses', () => {

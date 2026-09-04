@@ -146,8 +146,8 @@ test.describe('Expense Tracker Integration Tests', () => {
     // Expense list should be populated with mocked values (reversed newest first)
     const listItems = page.locator('#transaction-list li');
     await expect(listItems).toHaveCount(2);
-    await expect(listItems.nth(0)).toHaveText('2025-10-14 - Bus Ticket - Transportation - 2.50');
-    await expect(listItems.nth(1)).toHaveText('2025-10-15 - Coffee - Food - 4.50');
+    await expect(listItems.nth(0)).toHaveText('10/14/2025 - Bus Ticket - Transportation - 2.50');
+    await expect(listItems.nth(1)).toHaveText('10/15/2025 - Coffee - Food - 4.50');
   });
 
   test('should create expense online', async ({ page }) => {
@@ -214,13 +214,13 @@ test.describe('Expense Tracker Integration Tests', () => {
 
     // Verify it added in UI
     const listItems = page.locator('#transaction-list li');
-    await expect(listItems.first()).toHaveText('2025-10-16 - Dinner - Food - 42.50');
+    await expect(listItems.first()).toHaveText('10/16/2025 - Dinner - Food - 42.50');
 
     // Verify backend call was mocked and triggered
     const isCalled = await page.evaluate(() => (window as any).addExpenseCalled);
     const values = await page.evaluate(() => (window as any).appendedValues);
     expect(isCalled).toBe(true);
-    expect(values).toEqual(['2025-10-16', 'Dinner', 'Food', '42.50']);
+    expect(values).toEqual(['10/16/2025', 'Dinner', 'Food', '42.50']);
   });
 
   test('should queue expense offline and sync when going back online', async ({
@@ -303,7 +303,7 @@ test.describe('Expense Tracker Integration Tests', () => {
     // Verify it is labeled as "Not Synced" in the UI
     const listItems = page.locator('#transaction-list li');
     await expect(listItems.first()).toHaveText(
-      '2025-10-17 - Train Ticket - Transportation - 12.00 (Not Synced)'
+      '10/17/2025 - Train Ticket - Transportation - 12.00 (Not Synced)'
     );
 
     // Verify stored in localStorage
@@ -311,7 +311,7 @@ test.describe('Expense Tracker Integration Tests', () => {
       window.localStorage.getItem('pending-expenses')
     );
     expect(JSON.parse(pendingExpenses || '[]')).toEqual([
-      { date: '2025-10-17', name: 'Train Ticket', category: 'Transportation', price: '12.00' },
+      { date: '10/17/2025', name: 'Train Ticket', category: 'Transportation', price: '12.00' },
     ]);
 
     // Reconnect online
@@ -320,12 +320,12 @@ test.describe('Expense Tracker Integration Tests', () => {
     await expect(page.locator('#offline-indicator')).not.toBeVisible();
 
     // Verify it has synced (remove Not Synced label)
-    await expect(listItems.first()).toHaveText('2025-10-17 - Train Ticket - Transportation - 12.00');
+    await expect(listItems.first()).toHaveText('10/17/2025 - Train Ticket - Transportation - 12.00');
 
     // Verify append was called
     const isCalled = await page.evaluate(() => (window as any).addExpenseCalled);
     const values = await page.evaluate(() => (window as any).appendedValues);
     expect(isCalled).toBe(true);
-    expect(values).toEqual(['2025-10-17', 'Train Ticket', 'Transportation', '12.00']);
+    expect(values).toEqual(['10/17/2025', 'Train Ticket', 'Transportation', '12.00']);
   });
 });
